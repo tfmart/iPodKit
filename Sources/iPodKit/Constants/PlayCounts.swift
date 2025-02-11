@@ -5,23 +5,13 @@
 //  Created by Tomas Martins on 10/02/25.
 //
 
-struct PlayCounts {
+/// This is the return information file for the iPod. It contains all information that is available to change via the iPod, with regards to the song. When you autosync, iTunes reads this file and updates the iTunes database accordingly. After it does this, it erases this file, so as to prevent it from duplicating data by mistake. The iPod will create this file on playback if it is not there.
+struct PlayCounts: IPKObject {
     let id: String = "mhdp"
-    
-    //MARK: - Header
-    let fileHeaderLenght: Int = 96
-    let headerLastOffset: Int = 4
 }
 
 // MARK: - Entry Fields
 extension PlayCounts {
-    /// The play count header indicates a valid play count file and specifies how many entries follow and the size of each entry record.
-    /// The is an entry record for each song on the iPod; the entry position corresponding to the position of the song in the iTunesDB.
-    struct Header: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 96 }
-    }
-    
     /// The number of played times since last sync
     struct Entry: IPKField {
         var offset: Int { 0 }
