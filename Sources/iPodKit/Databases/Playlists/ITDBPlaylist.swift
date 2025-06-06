@@ -10,8 +10,32 @@ import Foundation
 /// Playlist object in iTunes database
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Playlist
-struct ITDBPlaylist: IPKObject {
+public struct ITDBPlaylist: IPKParseable {
     let id: String = "mhyp"
+    
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let dataObjectChildCount: UInt32
+    let playlistItemCount: UInt32
+    let isMasterPlaylist: Bool
+    let timestamp: UInt32
+    let persistentPlaylistId: UInt64
+    
+    init(from data: Data) throws {
+        try Self.validateMagicNumber(from: data, expectedId: "mhyp")
+        
+        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
+        self.totalLength = try Self.TotalLength().readUInt32(from: data)
+        self.dataObjectChildCount = try Self.DataObjectChildCount().readUInt32(from: data)
+        self.playlistItemCount = try Self.PlaylistItemCount().readUInt32(from: data)
+        self.isMasterPlaylist = try Self.IsMasterPlaylistFlag().readUInt8(from: data) == 1
+        self.timestamp = try Self.Timestamp().readUInt32(from: data)
+        self.persistentPlaylistId = try Self.PersistentPlaylistId().readUInt64(from: data)
+    }
+    
+    func getTotalLength(from data: Data) throws -> UInt32 {
+        return try Self.TotalLength().readUInt32(from: data)
+    }
 }
 
 extension ITDBPlaylist {

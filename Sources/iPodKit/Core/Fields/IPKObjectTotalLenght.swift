@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct IPKObjectTotalLenght: IPKField {
+struct IPKObjectTotalLength: IPKField {
     var offset: Int { 8 }
     var length: Int { 4 }
 }

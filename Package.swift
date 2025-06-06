@@ -10,15 +10,24 @@ let package = Package(
         .library(
             name: "iPodKit",
             targets: ["iPodKit"]),
+        .executable(
+            name: "analyze-itunes-db",
+            targets: ["iTunesDBAnalyzer"]),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "iPodKit"),
+        .executableTarget(
+            name: "iTunesDBAnalyzer",
+            dependencies: ["iPodKit"]),
         .testTarget(
             name: "iPodKitTests",
-            dependencies: ["iPodKit"]
+            dependencies: ["iPodKit"],
+            resources: [
+                .copy("Resources")
+            ]
         ),
     ]
 )
