@@ -143,6 +143,91 @@ import Foundation
     print("✅ Total size: \(artworkDB.formattedTotalSize)")
 }
 
+@Test func testParseActualPlayCounts() async throws {
+    // Get the path to the test resource
+    guard let resourceURL = Bundle.module.url(forResource: "Play Counts", withExtension: nil, subdirectory: "Resources") else {
+        Issue.record("Could not find Play Counts test resource")
+        return
+    }
+    let resourcePath = resourceURL.path
+    
+    // Parse the actual Play Counts file
+    let data = try Data(contentsOf: URL(fileURLWithPath: resourcePath))
+    let playCounts = try PlayCounts(from: data)
+    
+    // Verify basic Play Counts structure
+    #expect(playCounts.headerLength > 0, "Should have valid header length")
+    #expect(playCounts.entryLength > 0, "Should have valid entry length")
+    #expect(playCounts.numberOfEntries >= 0, "Should have valid number of entries")
+    #expect(playCounts.entries.count == Int(playCounts.numberOfEntries), "Entry count should match header")
+    
+    // Test entries if available
+    if !playCounts.entries.isEmpty {
+        let firstEntry = playCounts.entries[0]
+        
+        // Test convenience properties
+        let starRating = firstEntry.starRating
+        #expect(starRating >= 0 && starRating <= 5, "Star rating should be 0-5")
+        
+        let bookmarkFormatted = firstEntry.bookmarkTimeFormatted
+        #expect(bookmarkFormatted.contains(":"), "Bookmark time should be formatted as MM:SS")
+        
+        // Test date conversion if entry has been played
+        if firstEntry.lastPlayed > 0 {
+            let lastPlayedDate = firstEntry.lastPlayedDate
+            #expect(lastPlayedDate != nil, "Should convert valid timestamp to date")
+            
+            let formatted = firstEntry.lastPlayedFormatted
+            #expect(formatted != "Never played", "Should format valid last played date")
+        }
+    }
+    
+    // Test public API methods
+    let playedEntries = playCounts.playedEntries()
+    let mostPlayed = playCounts.mostPlayedEntries(limit: 5)
+    
+    #expect(playedEntries.count >= 0, "Should return played entries")
+    #expect(mostPlayed.count >= 0, "Should return most played entries")
+    
+    // Cross-reference with iTunes database to show which songs were played
+    if let iTunesURL = Bundle.module.url(forResource: "iTunesDB", withExtension: nil, subdirectory: "Resources") {
+        do {
+            let iTunesReader = try iTunesDBReader(filePath: iTunesURL.path)
+            let tracks = iTunesReader.tracks
+            
+            print("✅ Parsed Play Counts with \(playCounts.numberOfEntries) entries")
+            print("✅ Header length: \(playCounts.headerLength)")
+            print("✅ Entry length: \(playCounts.entryLength)")
+            print("✅ Played tracks: \(playedEntries.count)")
+            
+            if !playedEntries.isEmpty {
+                print("\n🎵 Played Songs:")
+                for (index, entry) in playedEntries {
+                    if index < tracks.count {
+                        let track = tracks[index]
+                        print("   - \(track.displayName)")
+                        print("     Play count: \(entry.playCount)")
+                        print("     Last played: \(entry.lastPlayedFormatted)")
+                        if entry.starRating > 0 {
+                            print("     Rating: \(entry.starRating)/5 stars")
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("✅ Parsed Play Counts with \(playCounts.numberOfEntries) entries")
+            print("✅ Header length: \(playCounts.headerLength)")
+            print("✅ Entry length: \(playCounts.entryLength)")
+            print("✅ Played tracks: \(playedEntries.count)")
+        }
+    } else {
+        print("✅ Parsed Play Counts with \(playCounts.numberOfEntries) entries")
+        print("✅ Header length: \(playCounts.headerLength)")
+        print("✅ Entry length: \(playCounts.entryLength)")
+        print("✅ Played tracks: \(playedEntries.count)")
+    }
+}
+
 @Test func testIPodDBReaderWithTestResources() async throws {
     // Get the test resources directory  
     guard let resourceURL = Bundle.module.url(forResource: "iTunesDB", withExtension: nil, subdirectory: "Resources") else {
