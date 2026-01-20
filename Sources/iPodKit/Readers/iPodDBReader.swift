@@ -70,7 +70,7 @@ import Foundation
 public class iPodDBReader {
     
     // MARK: - Properties
-    
+
     // Main database files
     public private(set) var iTunesDB: iTunesDBReader?
     public private(set) var playCountsDB: PlayCounts?
@@ -78,24 +78,28 @@ public class iPodDBReader {
     public private(set) var equalizerPresets: EqualizerPresets?
     public private(set) var artworkDB: ArtworkDatabase?
     public private(set) var photoDB: PhotoDatabase?
-    
+
     // iPod Shuffle specific files
     public private(set) var shuffleDB: iTunesSD?
     public private(set) var shuffleStats: iTunesStats?
     public private(set) var shuffleOrder: iTunesShuffle?
     public private(set) var playbackState: iTunesPState?
-    
+
+    // SQLite-based iTunes Library (newer iPods)
+    public private(set) var iTunesLibrary: iTunesLibraryReader?
+
     public private(set) var basePath: String
     public private(set) var deviceType: iPodDeviceType
     
     // MARK: - Device Type Detection
-    
+
     public enum iPodDeviceType {
         case standard       // Regular iPod with iTunesDB
         case shuffle        // iPod Shuffle with iTunesSD
         case photo          // iPod Photo with artwork support
+        case sqliteLibrary  // Newer iPods with SQLite-based iTunes Library
         case unknown
-        
+
         var supportedFiles: [String] {
             switch self {
             case .standard:
@@ -104,6 +108,8 @@ public class iPodDBReader {
                 return ["iTunesSD", "iTunesStats", "iTunesShuffle", "iTunesPState"]
             case .photo:
                 return ["iTunesDB", "Play Counts", "OTG Playlist File", "ArtworkDB", "Photo Database"]
+            case .sqliteLibrary:
+                return ["Library.itdb", "Dynamic.itdb", "Locations.itdb", "Genius.itdb", "Extras.itdb"]
             case .unknown:
                 return []
             }
@@ -179,12 +185,18 @@ public class iPodDBReader {
     // MARK: - Private Methods
     
     private func detectDeviceType() {
-        // Check for iPod Shuffle files first
+        // Check for SQLite-based iTunes Library first (newer iPods like Nano 6th/7th gen)
+        if iTunesLibraryReader.isSupported(iPodPath: basePath) {
+            deviceType = .sqliteLibrary
+            return
+        }
+
+        // Check for iPod Shuffle files
         if fileExists(for: .iTunesSD) {
             deviceType = .shuffle
             return
         }
-        
+
         // Check for regular iTunesDB
         if fileExists(for: .iTunesDB) {
             // Check if it's a Photo iPod
@@ -195,7 +207,7 @@ public class iPodDBReader {
             }
             return
         }
-        
+
         deviceType = .unknown
     }
     
@@ -221,10 +233,16 @@ public class iPodDBReader {
             try loadShuffleFiles()
         case .photo:
             try loadPhotoFiles()
+        case .sqliteLibrary:
+            try loadSQLiteLibraryFiles()
         case .unknown:
             // Try to load whatever files we can find
             try loadAvailableFiles()
         }
+    }
+
+    private func loadSQLiteLibraryFiles() throws {
+        iTunesLibrary = try iTunesLibraryReader(iPodPath: basePath)
     }
     
     private func loadStandardFiles() throws {
@@ -347,8 +365,9 @@ public extension iPodDBReader {
     /// Get list of successfully loaded database files
     var loadedFiles: [String] {
         var files: [String] = []
-        
+
         if iTunesDB != nil { files.append("iTunesDB") }
+        if iTunesLibrary != nil { files.append("iTunes Library (SQLite)") }
         if playCountsDB != nil { files.append("Play Counts") }
         if otgPlaylist != nil { files.append("OTG Playlist") }
         if equalizerPresets != nil { files.append("Equalizer Presets") }
@@ -358,19 +377,21 @@ public extension iPodDBReader {
         if shuffleStats != nil { files.append("iTunesStats") }
         if shuffleOrder != nil { files.append("iTunesShuffle") }
         if playbackState != nil { files.append("iTunesPState") }
-        
+
         return files
     }
     
     /// Check if main database is available
     var hasMainDatabase: Bool {
-        return iTunesDB != nil || shuffleDB != nil
+        return iTunesDB != nil || shuffleDB != nil || iTunesLibrary != nil
     }
-    
+
     /// Get total track count from main database
     var totalTrackCount: Int {
         if let db = iTunesDB {
             return db.trackCount
+        } else if let lib = iTunesLibrary {
+            return lib.trackCount
         } else if let sd = shuffleDB {
             return Int(sd.numberOfTracks)
         }
