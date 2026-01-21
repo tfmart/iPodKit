@@ -31,15 +31,12 @@ import Foundation
 /// let results = ipod.search("Beatles")
 /// ```
 ///
-/// ## Progressive Disclosure
+/// ## Advanced Access
 ///
-/// For advanced use cases, use the configuration builder:
+/// For advanced use cases, access raw databases directly:
 ///
 /// ```swift
-/// let ipod = try iPod.configure(path: "/Volumes/iPod")
-///     .loadArtwork(true)
-///     .loadPhotos(true)
-///     .build()
+/// let ipod = try iPod(path: "/Volumes/iPod")
 ///
 /// // Access raw databases for advanced use cases
 /// if let artworkDB = ipod.databases.artwork {
@@ -521,12 +518,54 @@ private extension iPod {
     }
 
     static func buildPlaylists(from reader: iPodDBReader, tracks: [Track]) -> [Playlist] {
-        guard let iTunesDB = reader.iTunesDB else { return [] }
+        var playlists: [Playlist] = []
 
-        return iTunesDB.playlists.map { itdbPlaylist in
-            // For now, we don't have playlist names parsed from the mhod objects
-            // This would need enhancement in the ITDBPlaylist parser
-            Playlist.from(itdbPlaylist, name: "", trackIds: [])
+        // Standard iPod with iTunesDB
+        if let iTunesDB = reader.iTunesDB {
+            // Build a mapping from iTunesDB track uniqueId to unified Track id
+            var trackIdMap: [UInt32: UInt64] = [:]
+            for itdbTrack in iTunesDB.tracks {
+                // The unified Track uses uniqueId as its id
+                trackIdMap[itdbTrack.uniqueId] = UInt64(itdbTrack.uniqueId)
+            }
+
+            for itdbPlaylist in iTunesDB.playlists {
+                var playlist = Playlist.from(itdbPlaylist)
+
+                // Map the iTunesDB track IDs to unified Track IDs
+                let mappedTrackIds = itdbPlaylist.trackIds.compactMap { trackIdMap[$0] }
+                playlist = Playlist(
+                    id: playlist.id,
+                    name: playlist.name,
+                    isMasterPlaylist: playlist.isMasterPlaylist,
+                    isPodcast: playlist.isPodcast,
+                    trackCount: mappedTrackIds.count,
+                    trackIds: mappedTrackIds,
+                    timestamp: playlist.timestamp
+                )
+
+                playlists.append(playlist)
+            }
+        }
+
+        // SQLite-based iTunes Library
+        if let iTunesLibrary = reader.iTunesLibrary {
+            let libraryPlaylists = Self.buildSQLitePlaylists(from: iTunesLibrary, tracks: tracks)
+            playlists.append(contentsOf: libraryPlaylists)
+        }
+
+        return playlists
+    }
+
+    static func buildSQLitePlaylists(from library: iTunesLibraryReader, tracks: [Track]) -> [Playlist] {
+        // SQLite library playlists are parsed separately
+        return library.playlists.map { libPlaylist in
+            Playlist.from(
+                id: UInt64(bitPattern: libPlaylist.id),
+                name: libPlaylist.name,
+                trackIds: libPlaylist.trackPids.map { UInt64(bitPattern: $0) },
+                isMasterPlaylist: libPlaylist.isMasterPlaylist
+            )
         }
     }
 }
@@ -537,12 +576,10 @@ extension iPod {
 
     /// Configuration options for iPod initialization.
     ///
-    /// Use ``iPod/configure(path:)`` to create a builder and customize options:
+    /// Use ``iPod/configure(path:)`` to create a builder:
     ///
     /// ```swift
     /// let ipod = try iPod.configure(path: "/Volumes/iPod")
-    ///     .loadArtwork(true)
-    ///     .loadPhotos(true)
     ///     .build()
     /// ```
     public struct Configuration: Sendable {
@@ -550,89 +587,21 @@ extension iPod {
         /// Path to the iPod root directory
         public let path: String
 
-        /// Whether to load artwork database
-        public let loadArtwork: Bool
-
-        /// Whether to load photo database
-        public let loadPhotos: Bool
-
-        /// Whether to load equalizer presets
-        public let loadEqualizer: Bool
-
-        /// Whether to load OTG playlists
-        public let loadOTGPlaylists: Bool
-
-        internal init(
-            path: String,
-            loadArtwork: Bool = false,
-            loadPhotos: Bool = false,
-            loadEqualizer: Bool = false,
-            loadOTGPlaylists: Bool = true
-        ) {
+        internal init(path: String) {
             self.path = path
-            self.loadArtwork = loadArtwork
-            self.loadPhotos = loadPhotos
-            self.loadEqualizer = loadEqualizer
-            self.loadOTGPlaylists = loadOTGPlaylists
         }
 
         /// Builder for creating iPod configurations with progressive disclosure.
         ///
         /// ```swift
         /// let ipod = try iPod.configure(path: "/Volumes/iPod")
-        ///     .loadArtwork(true)
-        ///     .loadPhotos(true)
         ///     .build()
         /// ```
         public final class Builder: @unchecked Sendable {
             private let path: String
-            private var _loadArtwork: Bool = false
-            private var _loadPhotos: Bool = false
-            private var _loadEqualizer: Bool = false
-            private var _loadOTGPlaylists: Bool = true
 
             internal init(path: String) {
                 self.path = path
-            }
-
-            /// Enable or disable artwork database loading.
-            ///
-            /// - Parameter enabled: Whether to load artwork (default: false)
-            /// - Returns: Self for chaining
-            @discardableResult
-            public func loadArtwork(_ enabled: Bool) -> Builder {
-                _loadArtwork = enabled
-                return self
-            }
-
-            /// Enable or disable photo database loading.
-            ///
-            /// - Parameter enabled: Whether to load photos (default: false)
-            /// - Returns: Self for chaining
-            @discardableResult
-            public func loadPhotos(_ enabled: Bool) -> Builder {
-                _loadPhotos = enabled
-                return self
-            }
-
-            /// Enable or disable equalizer presets loading.
-            ///
-            /// - Parameter enabled: Whether to load equalizer presets (default: false)
-            /// - Returns: Self for chaining
-            @discardableResult
-            public func loadEqualizer(_ enabled: Bool) -> Builder {
-                _loadEqualizer = enabled
-                return self
-            }
-
-            /// Enable or disable OTG playlist loading.
-            ///
-            /// - Parameter enabled: Whether to load OTG playlists (default: true)
-            /// - Returns: Self for chaining
-            @discardableResult
-            public func loadOTGPlaylists(_ enabled: Bool) -> Builder {
-                _loadOTGPlaylists = enabled
-                return self
             }
 
             /// Build the iPod instance with the configured options.
@@ -640,13 +609,7 @@ extension iPod {
             /// - Throws: ``IPKError`` if the path is invalid or database files cannot be parsed
             /// - Returns: Configured iPod instance
             public func build() throws -> iPod {
-                let configuration = Configuration(
-                    path: path,
-                    loadArtwork: _loadArtwork,
-                    loadPhotos: _loadPhotos,
-                    loadEqualizer: _loadEqualizer,
-                    loadOTGPlaylists: _loadOTGPlaylists
-                )
+                let configuration = Configuration(path: path)
                 return try iPod(configuration: configuration)
             }
         }

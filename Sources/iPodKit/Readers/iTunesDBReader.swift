@@ -15,10 +15,13 @@ import Foundation
 public class iTunesDBReader {
     
     // MARK: - Properties
-    
+
     public let database: iTunesDB
     public private(set) var tracks: [ITDBTrack] = []
-    public private(set) var playlists: [ITDBPlaylist] = []
+    private var _playlists: [ITDBPlaylist] = []
+
+    /// Internal accessor for playlists
+    internal var playlists: [ITDBPlaylist] { _playlists }
     
     // MARK: - Initialization
     
@@ -119,7 +122,7 @@ public class iTunesDBReader {
             
             let playlistData = playlistListData.subdata(in: currentOffset..<playlistListData.count)
             let playlist = try ITDBPlaylist(from: playlistData)
-            playlists.append(playlist)
+            _playlists.append(playlist)
             
             currentOffset += Int(try playlist.getTotalLength(from: playlistData))
         }

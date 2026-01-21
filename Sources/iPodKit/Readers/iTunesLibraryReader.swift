@@ -58,6 +58,14 @@ public struct ITLibTrack: Sendable {
     }
 }
 
+/// Playlist information from SQLite-based iTunes Library
+struct ITLibPlaylist: Sendable {
+    let id: Int64
+    let name: String
+    let isMasterPlaylist: Bool
+    let trackPids: [Int64]
+}
+
 /// Error types for iTunes Library Reader
 public enum iTunesLibraryReaderError: Error, Sendable {
     case fileNotFound(String)
@@ -92,8 +100,12 @@ public final class iTunesLibraryReader: Sendable {
     // MARK: - Properties
 
     public let tracks: [ITLibTrack]
+    private let _playlists: [ITLibPlaylist]
     public let libraryPath: URL
     public let dynamicPath: URL
+
+    /// Internal accessor for playlists
+    internal var playlists: [ITLibPlaylist] { _playlists }
 
     /// The device name as stored in the iTunes Library database.
     ///
@@ -141,6 +153,9 @@ public final class iTunesLibraryReader: Sendable {
 
         // Parse the databases
         self.tracks = try Self.parseDatabase(libraryPath: libraryPath, dynamicPath: dynamicPath)
+
+        // Parse playlists from container table
+        self._playlists = Self.parsePlaylists(libraryPath: libraryPath)
 
         // Extract device name from container table
         self.deviceName = Self.parseDeviceName(libraryPath: libraryPath)
@@ -251,6 +266,68 @@ public final class iTunesLibraryReader: Sendable {
             // Silently return nil - device name is optional
             return nil
         }
+    }
+
+    /// Parses playlists from the container and containee tables.
+    ///
+    /// Playlists in iTunes Library are stored as containers with distinguished_kind = 0.
+    /// The containee table links containers to their track items.
+    private static func parsePlaylists(libraryPath: URL) -> [ITLibPlaylist] {
+        var playlists: [ITLibPlaylist] = []
+
+        do {
+            let db = try Connection(libraryPath.path, readonly: true)
+
+            // Query playlists (containers that are not the device name and not folders)
+            // distinguished_kind = 0 for regular playlists, 4 for Music, etc.
+            // We want containers that have items (are actual playlists)
+            let playlistQuery = """
+                SELECT c.pid, c.name, c.distinguished_kind
+                FROM container c
+                WHERE c.pid IN (SELECT DISTINCT container_pid FROM containee)
+                ORDER BY c.name
+                """
+
+            var playlistData: [(id: Int64, name: String, isMaster: Bool)] = []
+
+            for row in try db.prepare(playlistQuery) {
+                if let pid = row[0] as? Int64,
+                   let name = row[1] as? String {
+                    let distinguishedKind = row[2] as? Int64 ?? 0
+                    // distinguished_kind = 4 is typically the "Music" or master playlist
+                    let isMaster = distinguishedKind == 4
+                    playlistData.append((id: pid, name: name, isMaster: isMaster))
+                }
+            }
+
+            // For each playlist, get its track PIDs
+            for playlist in playlistData {
+                let trackQuery = """
+                    SELECT item_pid FROM containee
+                    WHERE container_pid = \(playlist.id)
+                    ORDER BY position
+                    """
+
+                var trackPids: [Int64] = []
+                for row in try db.prepare(trackQuery) {
+                    if let itemPid = row[0] as? Int64 {
+                        trackPids.append(itemPid)
+                    }
+                }
+
+                let libPlaylist = ITLibPlaylist(
+                    id: playlist.id,
+                    name: playlist.name,
+                    isMasterPlaylist: playlist.isMaster,
+                    trackPids: trackPids
+                )
+                playlists.append(libPlaylist)
+            }
+        } catch {
+            // Silently return empty - playlists are optional
+        }
+
+        return playlists
     }
 
     // MARK: - Static Methods

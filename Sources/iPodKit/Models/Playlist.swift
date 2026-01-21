@@ -92,7 +92,7 @@ public extension Playlist {
 internal extension Playlist {
 
     /// Create a Playlist from ITDBPlaylist
-    static func from(_ itdbPlaylist: ITDBPlaylist, name: String, trackIds: [UInt64]) -> Playlist {
+    static func from(_ itdbPlaylist: ITDBPlaylist) -> Playlist {
         let timestamp: Date?
         if itdbPlaylist.timestamp > 0 {
             let macEpochOffset: TimeInterval = 2082844800
@@ -102,14 +102,35 @@ internal extension Playlist {
             timestamp = nil
         }
 
+        // Convert track IDs from UInt32 to UInt64
+        let trackIds = itdbPlaylist.trackIds.map { UInt64($0) }
+
         return Playlist(
             id: itdbPlaylist.persistentPlaylistId,
-            name: name,
+            name: itdbPlaylist.name ?? "",
             isMasterPlaylist: itdbPlaylist.isMasterPlaylist,
-            isPodcast: false,
+            isPodcast: itdbPlaylist.isPodcast,
             trackCount: Int(itdbPlaylist.playlistItemCount),
             trackIds: trackIds,
             timestamp: timestamp
+        )
+    }
+
+    /// Create a Playlist from SQLite-based iTunes Library container
+    static func from(
+        id: UInt64,
+        name: String,
+        trackIds: [UInt64],
+        isMasterPlaylist: Bool = false
+    ) -> Playlist {
+        return Playlist(
+            id: id,
+            name: name,
+            isMasterPlaylist: isMasterPlaylist,
+            isPodcast: false,
+            trackCount: trackIds.count,
+            trackIds: trackIds,
+            timestamp: nil
         )
     }
 }
