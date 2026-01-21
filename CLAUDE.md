@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-iPodKit is a Swift Package Manager library for parsing iTunes database files from iPod devices. It supports all major iPod database formats including standard iPods, iPod Shuffle, and iPod Photo models with comprehensive parsing capabilities for tracks, playlists, artwork, photos, and playback state.
+iPodKit is a Swift Package Manager library for parsing iTunes database files from iPod devices. It follows a **simple, invisible, gradual** SDK design pattern inspired by RevenueCat.
 
 ## Build and Test Commands
 
@@ -19,56 +19,119 @@ swift test
 swift test --filter iPodKitTests
 
 # Build and run the analyzer tool
-swift run analyze-itunes-db [options] /path/to/file
-
-# Analyzer options:
-# --debug      Debug mode for iTunesDB parsing
-# --detailed   Detailed debug information
-# --structure  Structure analysis
-# --artwork    Parse ArtworkDB files
-# --ipod       Parse entire iPod directory (auto-detects all database files)
+swift run analyze-itunes-db --ipod /path/to/iPod
 ```
+
+## SDK Design Principles
+
+iPodKit follows three core principles:
+
+1. **Simple** - Single entry point (`iPod` class), minimal API surface
+2. **Invisible** - Complexity hidden internally, sensible defaults
+3. **Gradual** - Progressive disclosure via `Configuration.Builder` and `databases` accessor
 
 ## Core Architecture
 
+### Public API Layer (Façade)
+
+The primary public interface consists of:
+
+- **`iPod`** - Main entry point, the façade that abstracts all complexity
+- **`Track`** - Unified track model combining data from multiple sources
+- **`Playlist`** - Unified playlist model
+- **`iPod.Configuration.Builder`** - Progressive disclosure for advanced options
+- **`iPod.DatabaseAccess`** - Raw database access for power users
+
+```swift
+// Simple usage
+let ipod = try iPod(path: "/Volumes/iPod")
+let recent = ipod.recentlyPlayed()
+
+// Advanced usage
+let ipod = try iPod.configure(path: "/Volumes/iPod")
+    .loadArtwork(true)
+    .build()
+
+// Power user access
+if let artworkDB = ipod.databases.artwork { ... }
+```
+
+### Internal Implementation Layer
+
+Internal classes handle the complexity (users don't see these):
+
+- **`iPodDBReader`** (internal) - Orchestrates loading all database files
+- **`iTunesDBReader`** - Parses iTunesDB format (exposed via `databases.iTunesDB`)
+
+### Database Parsers
+
+Each database type has a dedicated parser:
+
+**Standard iPod:**
+- `iTunesDB`, `ITDBTrack`, `ITDBPlaylist` - Main database
+- `PlayCounts` - Play history
+- `OTGPlaylist` - On-the-go playlists
+- `EqualizerPresets` - EQ settings
+- `ArtworkDatabase` - Album art
+- `PhotoDatabase` - Photos
+
+**iPod Shuffle:**
+- `iTunesSD` - Main database (big-endian)
+- `iTunesStats` - Play history
+- `iTunesShuffle` - Shuffle order
+- `iTunesPState` - Playback state
+
 ### Binary Parsing Framework
 
-The library uses a protocol-based architecture for parsing binary iTunes database formats:
+Protocol-based architecture for type-safe binary parsing:
 
-- **IPKField**: Defines binary field locations (offset, length) with type-safe reading methods
-- **IPKObject**: Base protocol for database objects with magic number validation
-- **IPKParseable**: Protocol for objects that can be initialized from Data
-- **Data+Extensions**: Little-endian and big-endian binary reading utilities
+- **`IPKField`** - Defines field locations with type-safe reading
+- **`IPKParseable`** - Protocol for Data-initializable objects
+- **`Data+Extensions`** - Binary reading utilities
 
-### Database File Types
+## Project Structure
 
-iPodKit supports parsing 10+ different iTunes database file types:
+```
+Sources/iPodKit/
+├── iPod.swift                 # Main façade (public API)
+├── iPodKit.swift              # Library exports
+├── Core/
+│   ├── Protocols/             # IPKField, IPKObject, IPKParseable
+│   ├── Extensions/            # Data+Extensions
+│   ├── Errors/                # IPKError
+│   └── Fields/                # Common field structures
+├── Databases/
+│   ├── Standard/              # iTunesDB, PlayCounts, ITDBTrack
+│   ├── Shuffle/               # iTunesSD, iTunesStats, etc.
+│   ├── Media/                 # ArtworkDatabase, PhotoDatabase
+│   └── Playlists/             # ITDBPlaylist, OTGPlaylist
+├── Models/
+│   ├── Track.swift            # Unified track model
+│   ├── Playlist.swift         # Unified playlist model
+│   └── EqualizerPresets.swift
+└── Readers/
+    ├── iPodDBReader.swift     # Internal orchestrator
+    ├── iTunesDBReader.swift   # iTunesDB parser
+    └── iTunesLibraryReader.swift
+```
 
-**Standard iPod Files:**
-- iTunesDB (main database) → `iTunesDBReader`
-- Play Counts → `PlayCounts`
-- OTG Playlist File → `OTGPlaylist`
-- Equalizer Presets → `EqualizerPresets`
-- ArtworkDB → `ArtworkDatabase`
-- Photo Database → `PhotoDatabase`
+## Development Patterns
 
-**iPod Shuffle Files:**
-- iTunesSD (big-endian main database) → `iTunesSD`
-- iTunesStats → `iTunesStats`
-- iTunesShuffle → `iTunesShuffle`
-- iTunesPState → `iTunesPState`
+### Adding Features to Public API
 
-### Unified Database Reader
+1. Add methods to `iPod` class in `iPod.swift`
+2. Keep implementation details in internal classes
+3. Use `Track` and `Playlist` unified models for return types
 
-`iPodDBReader` provides device-agnostic database access:
-- Auto-detects iPod device type (standard/shuffle/photo)
-- Loads all available database files from iPod directory structure
-- Provides unified API for searching across all database types
-- Handles file path resolution and optional file loading
+### Adding New Database Support
 
-### Field Definition Pattern
+1. Create parser in appropriate `/Databases` category
+2. Conform to `IPKParseable` protocol
+3. Define binary layout using `IPKField` structs
+4. Add to `iPodDBReader` for automatic loading
+5. Expose via `iPod.DatabaseAccess` if needed
 
-Each database structure defines its binary layout using nested IPKField structs:
+### Binary Field Reading
 
 ```swift
 extension ITDBTrack {
@@ -76,89 +139,40 @@ extension ITDBTrack {
         var offset: Int { 16 }
         var length: Int { 4 }
     }
-    // ... more fields
 }
-```
 
-### String Parsing
-
-iTunes databases use complex string encoding with artifacts. The `readMHODString` method in Data+Extensions handles:
-- UTF-16/UTF-8 encoding detection
-- Removal of iTunes-specific padding characters
-- String cleanup and trimming
-
-### Error Handling
-
-`IPKError` enum provides structured error handling for:
-- Invalid magic numbers with expected vs found values
-- Insufficient data conditions
-- Field size mismatches with specific field context
-- String decoding failures
-
-## Project Structure
-
-The codebase is organized into logical modules for maintainability:
-
-```
-Sources/iPodKit/
-├── iPodKit.swift              # Main library entry point
-├── Core/                      # Core framework components
-│   ├── Protocols/             # IPKField, IPKObject, IPKParseable
-│   ├── Extensions/            # Data+Extensions for binary parsing
-│   ├── Errors/                # IPKError definitions
-│   └── Fields/                # Common field structures
-├── Databases/                 # Database parsers by category
-│   ├── Standard/              # iTunesDB, PlayCounts, ITDBTrack, etc.
-│   ├── Shuffle/               # iTunesSD, iTunesStats, iTunesShuffle, etc.
-│   ├── Media/                 # ArtworkDatabase, PhotoDatabase
-│   └── Playlists/             # ITDBPlaylist, OTGPlaylist, etc.
-├── Models/                    # Supporting data models
-├── Readers/                   # High-level reader classes
-│   ├── iTunesDBReader.swift   # Standard iTunes database reader
-│   └── iPodDBReader.swift     # Unified multi-format reader
-```
-
-## Development Patterns
-
-### Adding New Database File Support
-
-1. Create parser struct in appropriate `/Databases` category
-2. Conform to `IPKParseable` protocol
-3. Define binary field layout using `IPKField` structs
-4. Implement `init(from data: Data)` with magic number validation
-5. Add convenience properties for data formatting and conversion
-6. Add to `iPodDBReader` unified interface in `/Readers`
-7. Update analyzer with new file type support
-
-### Binary Field Reading
-
-Always use IPKField protocol methods for type-safe reading:
-```swift
 self.uniqueId = try Self.UniqueId().readUInt32(from: data)
-```
-
-### Magic Number Validation
-
-Use the standard validation pattern:
-```swift
-try Self.validateMagicNumber(from: data, expectedId: "mhit")
 ```
 
 ### Date Conversion
 
-iTunes databases use Mac epoch (1904) timestamps. Convert to Unix epoch:
+iTunes uses Mac epoch (1904). Convert to Unix:
+
 ```swift
 let macEpochOffset: TimeInterval = 2082844800
 let unixTimestamp = TimeInterval(timestamp) - macEpochOffset
 return Date(timeIntervalSince1970: unixTimestamp)
 ```
 
-## Testing Database Files
+## Testing
 
-Use the analyzer tool to validate parsing of new database files:
+Run tests with:
+
 ```bash
-swift run analyze-itunes-db --artwork /path/to/ArtworkDB
-swift run analyze-itunes-db --ipod /path/to/iPod/root
+swift test
 ```
 
-The analyzer provides detailed output showing successful parsing, file structure, and data validation.
+Use real iPod database files in `Tests/iPodKitTests/Resources/` for integration tests.
+
+## Logging
+
+Use `os.Logger` for diagnostic output:
+
+```swift
+import os
+
+private let logger = Logger(subsystem: "com.iPodKit", category: "Parsing")
+logger.debug("Parsed \(trackCount) tracks")
+```
+
+Never use `print()` statements in library code.

@@ -1,193 +1,201 @@
 # iPodKit
 
-A comprehensive Swift library for parsing iTunes database files from iPod devices. iPodKit supports all major iPod models including standard iPods, iPod Shuffle, and iPod Photo, providing complete access to tracks, playlists, artwork, photos, and playback state.
-
-## Features
-
-### Supported Database Files
-
-**Standard iPod Models:**
-- **iTunesDB** - Main track and playlist database
-- **Play Counts** - Play counts, ratings, and last played information
-- **OTG Playlist File** - On-The-Go playlists created directly on iPod
-- **Equalizer Presets** - Custom equalizer settings
-- **ArtworkDB** - Album artwork metadata and image information
-- **Photo Database** - User photos and photo albums
-
-**iPod Shuffle Models:**
-- **iTunesSD** - Shuffle main database (big-endian format)
-- **iTunesStats** - Play count statistics for Shuffle
-- **iTunesShuffle** - Shuffled track order sequence
-- **iTunesPState** - Current playback state (volume, position, modes)
-
-### Key Capabilities
-
-- **Universal Parsing** - Supports all known iTunes database formats
-- **Device Auto-Detection** - Automatically identifies iPod model and loads appropriate files
-- **Rich Metadata** - Full access to track info, artwork, ratings, play counts
-- **Search & Filter** - Comprehensive APIs for finding tracks and playlists
-- **Type Safety** - Protocol-based binary parsing with proper error handling
-- **Command Line Tools** - Built-in analyzer for testing and debugging
+A Swift library for reading iPod databases. Simple API, invisible complexity, gradual disclosure for power users.
 
 ## Installation
 
 ### Swift Package Manager
 
-Add iPodKit to your `Package.swift`:
-
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/iPodKit.git", from: "1.0.0")
+    .package(url: "https://github.com/tomasmartins/iPodKit.git", from: "2.0.0")
 ]
 ```
 
-### Xcode
-
-1. Open your project in Xcode
-2. Go to **File** → **Add Package Dependencies**
-3. Enter the repository URL: `https://github.com/yourusername/iPodKit.git`
-4. Click **Add Package**
-
 ## Quick Start
 
-### Parsing an iTunes Database
-
 ```swift
 import iPodKit
 
-// Parse a single iTunesDB file
-let reader = try iTunesDBReader(filePath: "/path/to/iTunesDB")
+// One line to read your iPod
+let ipod = try iPod(path: "/Volumes/iPod")
 
-print("Found \(reader.trackCount) tracks")
-print("Artists: \(reader.allArtists().count)")
-print("Albums: \(reader.allAlbums().count)")
-
-// Search for tracks
-let rockTracks = reader.tracks(fromAlbum: "Dark Side of the Moon")
-let stingTracks = reader.tracks(byArtist: "Sting")
-```
-
-### Universal iPod Database Reader
-
-```swift
-import iPodKit
-
-// Parse entire iPod directory (auto-detects device type and loads all databases)
-let ipodReader = try iPodDBReader(iPodPath: "/Volumes/iPod")
-
-print("Device Type: \(ipodReader.deviceType)")
-print("Loaded Files: \(ipodReader.loadedFiles)")
-
-// Access different database types
-if let artworkDB = ipodReader.artworkDB {
-    print("Found \(artworkDB.images.count) artwork images")
-}
-
-if let playCountsDB = ipodReader.playCountsDB {
-    let mostPlayed = playCountsDB.mostPlayedEntries(limit: 10)
-    print("Top played tracks: \(mostPlayed)")
+// Access your music
+for track in ipod.tracks {
+    print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
 }
 ```
 
-### Working with Track Data
+That's it. No configuration, no database types to understand, no file paths to manage.
+
+## Simple API
+
+### Tracks
 
 ```swift
-for track in reader.tracks.prefix(5) {
-    print("🎵 \(track.displayName)")
-    print("   Artist: \(track.artist ?? "Unknown")")
-    print("   Album: \(track.album ?? "Unknown")")
-    print("   Duration: \(track.durationFormatted)")
-    print("   Rating: \(track.starRating)/5 stars")
-    print("   Play Count: \(track.playCount)")
-    print("   Last Played: \(track.lastPlayedFormatted)")
-    print("   File Size: \(track.fileSizeFormatted)")
-}
+let ipod = try iPod(path: "/Volumes/iPod")
+
+// All tracks
+let tracks = ipod.tracks
+
+// Search
+let beatles = ipod.search("Beatles")
+
+// Filter by artist, album, or genre
+let rockTracks = ipod.tracks(inGenre: "Rock")
+let abbeyRoad = ipod.tracks(fromAlbum: "Abbey Road")
 ```
 
-### Artwork and Photos
+### Playback History
 
 ```swift
-// Access artwork database
-if let artworkDB = ipodReader.artworkDB {
-    for image in artworkDB.images.prefix(3) {
-        print("🖼️ Image \(image.imageId)")
-        print("   Size: \(image.imageWidth)×\(image.imageHeight)")
-        print("   File Size: \(image.formattedSize)")
+// Recently played (with merged play count data)
+let recent = ipod.recentlyPlayed(limit: 25)
+
+// Most played
+let favorites = ipod.mostPlayed(limit: 10)
+
+// Never played
+let unplayed = ipod.neverPlayed()
+
+// Top rated
+let bestSongs = ipod.topRated(minimumRating: 4)
+```
+
+### Statistics
+
+```swift
+print("Tracks: \(ipod.trackCount)")
+print("Artists: \(ipod.artists.count)")
+print("Total duration: \(ipod.totalDurationFormatted)")
+print("Total size: \(ipod.totalSizeFormatted)")
+```
+
+## Invisible Complexity
+
+iPodKit automatically:
+
+- Detects device type (standard iPod, Shuffle, Photo, SQLite-based)
+- Loads all available database files
+- Merges play count data with track metadata
+- Handles encoding differences (UTF-8, UTF-16, big-endian, little-endian)
+- Converts Mac epoch timestamps to standard `Date` objects
+
+You don't need to know any of this. It just works.
+
+## Progressive Disclosure
+
+Need more control? Use the configuration builder:
+
+```swift
+let ipod = try iPod.configure(path: "/Volumes/iPod")
+    .loadArtwork(true)
+    .loadPhotos(true)
+    .loadEqualizer(true)
+    .build()
+```
+
+Need raw database access? It's available:
+
+```swift
+// Access underlying databases for advanced use cases
+if let artworkDB = ipod.databases.artwork {
+    for image in artworkDB.images {
+        print("Image: \(image.imageWidth)x\(image.imageHeight)")
     }
 }
 
-// Access photo database  
-if let photoDB = ipodReader.photoDB {
-    for album in photoDB.albums {
-        print("📁 \(album.displayName) - \(album.photoCount) photos")
-    }
+if let playCounts = ipod.databases.playCounts {
+    let mostPlayed = playCounts.mostPlayedEntries(limit: 10)
 }
 ```
 
-## Command Line Tools
+## Unified Track Model
 
-iPodKit includes a powerful command-line analyzer:
+The `Track` type combines data from multiple sources automatically:
+
+```swift
+let track = ipod.tracks.first!
+
+// Metadata from iTunesDB
+track.title
+track.artist
+track.album
+track.duration
+track.durationFormatted  // "3:45"
+
+// Play data merged from Play Counts file
+track.playCount
+track.lastPlayed         // Date?
+track.lastPlayedFormatted // "Jan 15, 2025, 3:45 PM"
+track.skipCount
+track.rating             // 0-5 stars
+track.bookmark           // Resume position
+
+// Computed properties
+track.displayName        // Title or filename
+track.hasBeenPlayed
+track.playToSkipRatio
+```
+
+## Supported Devices
+
+| Device Type | Database Format | Supported |
+|-------------|-----------------|-----------|
+| iPod Classic | iTunesDB | Yes |
+| iPod Mini | iTunesDB | Yes |
+| iPod Nano | iTunesDB / SQLite | Yes |
+| iPod Shuffle | iTunesSD | Yes |
+| iPod Photo | iTunesDB + ArtworkDB | Yes |
+| iPod Touch | SQLite | Yes |
+
+## Supported Files
+
+**Standard iPods:**
+- iTunesDB (tracks, playlists)
+- Play Counts (play history)
+- OTG Playlist (on-the-go playlists)
+- Equalizer Presets
+- ArtworkDB (album artwork)
+- Photo Database
+
+**iPod Shuffle:**
+- iTunesSD (tracks)
+- iTunesStats (play history)
+- iTunesShuffle (shuffle order)
+- iTunesPState (playback state)
+
+## Command Line Tool
 
 ```bash
-# Build the analyzer
+# Build
 swift build
 
-# Analyze an iTunesDB file
-swift run analyze-itunes-db /path/to/iTunesDB
-
-# Parse artwork database
-swift run analyze-itunes-db --artwork /path/to/ArtworkDB
-
-# Analyze entire iPod (auto-detects all database files)
+# Analyze an iPod
 swift run analyze-itunes-db --ipod /Volumes/iPod
 
-# Debug mode for detailed parsing information
-swift run analyze-itunes-db --debug /path/to/iTunesDB
+# Analyze a single database file
+swift run analyze-itunes-db /path/to/iTunesDB
+
+# Analyze artwork
+swift run analyze-itunes-db --artwork /path/to/ArtworkDB
 ```
-
-## Architecture
-
-iPodKit uses a protocol-based architecture for type-safe binary parsing:
-
-- **IPKField** - Defines binary field locations with type-safe reading
-- **IPKParseable** - Protocol for objects that can be parsed from Data
-- **Unified Reader** - Device-agnostic interface with auto-detection
-- **Error Handling** - Comprehensive error types with detailed context
-
-### Binary Format Support
-
-iPodKit handles the complexities of iTunes database formats:
-- Little-endian and big-endian integer parsing
-- UTF-16/UTF-8 string encoding with iTunes-specific cleanup
-- Mac epoch (1904) to Unix epoch timestamp conversion
-- Magic number validation and structure verification
-
-## Examples
-
-See the `Sources/iTunesDBAnalyzer` directory for complete examples of:
-- Parsing all database file types
-- Device type detection
-- Comprehensive data analysis
-- Error handling patterns
 
 ## Requirements
 
 - Swift 6.0+
-- Foundation framework
+- macOS, iOS, tvOS, watchOS
 
-## Contributing
+## Design Principles
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+iPodKit follows modern SDK design principles:
+
+1. **Simple** - One entry point (`iPod`), sensible defaults
+2. **Invisible** - Complexity hidden, just works
+3. **Gradual** - Advanced features available when needed
+
+Inspired by [RevenueCat's SDK design](https://blog.jacobstechtavern.com/p/revenuecat-sdk).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## References
-
-- [iPodLinux iTunes Database Documentation](http://www.ipodlinux.org/ITunesDB/)
-- iTunes database format specifications and field definitions
-
-## Acknowledgments
-
-Built with reference to the extensive reverse engineering work by the iPodLinux community.
+MIT License
