@@ -64,11 +64,11 @@ public enum iTunesLibraryReaderError: Error, Sendable {
     case databaseError(String)
 }
 
-/// High-level reader for SQLite-based iTunes Library files (newer iPods)
+/// High-level reader for SQLite-based iTunes Library files.
 ///
 /// This class provides a convenient interface for reading and parsing
-/// iTunes Library files from newer iPod models (iPod Nano 6th/7th gen, etc.)
-/// that use SQLite databases instead of the binary iTunesDB format.
+/// iTunes Library files from iPods that use the SQLite-based library format
+/// instead of the binary iTunesDB format.
 ///
 /// ## Usage
 ///
@@ -94,6 +94,12 @@ public final class iTunesLibraryReader: Sendable {
     public let tracks: [ITLibTrack]
     public let libraryPath: URL
     public let dynamicPath: URL
+
+    /// The device name as stored in the iTunes Library database.
+    ///
+    /// This is the name assigned to the iPod in iTunes, extracted from
+    /// the `container` table in Library.itdb.
+    public let deviceName: String?
 
     // MARK: - Initialization
 
@@ -135,6 +141,9 @@ public final class iTunesLibraryReader: Sendable {
 
         // Parse the databases
         self.tracks = try Self.parseDatabase(libraryPath: libraryPath, dynamicPath: dynamicPath)
+
+        // Extract device name from container table
+        self.deviceName = Self.parseDeviceName(libraryPath: libraryPath)
     }
 
     // MARK: - Private Methods
@@ -210,6 +219,29 @@ public final class iTunesLibraryReader: Sendable {
         }
     }
 
+    /// Extracts the device name from the container table in Library.itdb.
+    ///
+    /// The container table stores the iPod's name as assigned in iTunes.
+    /// We query for entries where distinguished_kind is not null, which
+    /// identifies the main device container.
+    private static func parseDeviceName(libraryPath: URL) -> String? {
+        do {
+            let db = try Connection(libraryPath.path, readonly: true)
+
+            // Query the container table for the device name
+            let query = "SELECT name FROM container WHERE distinguished_kind IS NOT NULL LIMIT 1"
+            for row in try db.prepare(query) {
+                if let name = row[0] as? String, !name.isEmpty {
+                    return name
+                }
+            }
+            return nil
+        } catch {
+            // Silently return nil - device name is optional
+            return nil
+        }
+    }
+
     // MARK: - Static Methods
 
     /// Check if the given iPod path contains SQLite-based iTunes Library
@@ -228,6 +260,35 @@ public final class iTunesLibraryReader: Sendable {
         let dynamicPath = iPodURL.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Dynamic.itdb")
         let fm = FileManager.default
         return fm.fileExists(atPath: libraryPath.path) && fm.fileExists(atPath: dynamicPath.path)
+    }
+
+    /// Get device name from iPod path without loading the full library.
+    ///
+    /// This is a convenience method for quickly extracting just the device name
+    /// from an iPod's iTunes Library database without parsing all tracks.
+    ///
+    /// ```swift
+    /// if let name = iTunesLibraryReader.deviceName(fromIPodPath: "/Volumes/iPod") {
+    ///     print("Device name: \(name)")
+    /// }
+    /// ```
+    ///
+    /// - Parameter iPodPath: Path to iPod root directory
+    /// - Returns: Device name if found, nil otherwise
+    public static func deviceName(fromIPodPath iPodPath: String) -> String? {
+        let libraryPath = URL(fileURLWithPath: iPodPath)
+            .appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
+        return parseDeviceName(libraryPath: libraryPath)
+    }
+
+    /// Get device name from iPod URL without loading the full library.
+    ///
+    /// - Parameter iPodURL: URL to iPod root directory
+    /// - Returns: Device name if found, nil otherwise
+    public static func deviceName(fromIPodURL iPodURL: URL) -> String? {
+        let libraryPath = iPodURL
+            .appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
+        return parseDeviceName(libraryPath: libraryPath)
     }
 }
 
