@@ -223,7 +223,7 @@ Different iPod models use different database versions:
 
 - **Version 0x13**: iPod Video, 5.5G iPod
 - **Version 0x14**: iPod Classic
-- **Version 0x15**: iPod Touch, iPhone (early versions)
+- **Version 0x15**: Later iPod models
 
 iPodKit handles version differences automatically by checking version numbers and adjusting parsing accordingly.
 
