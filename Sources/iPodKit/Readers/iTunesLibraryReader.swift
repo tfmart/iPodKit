@@ -222,14 +222,25 @@ public final class iTunesLibraryReader: Sendable {
     /// Extracts the device name from the container table in Library.itdb.
     ///
     /// The container table stores the iPod's name as assigned in iTunes.
-    /// We query for entries where distinguished_kind is not null, which
-    /// identifies the main device container.
+    /// The device name is a container with distinguished_kind = 0, parent_pid = 0,
+    /// and its pid is NOT used as a parent_pid by any other container
+    /// (distinguishing it from playlist folders).
     private static func parseDeviceName(libraryPath: URL) -> String? {
         do {
             let db = try Connection(libraryPath.path, readonly: true)
 
-            // Query the container table for the device name
-            let query = "SELECT name FROM container WHERE distinguished_kind IS NOT NULL LIMIT 1"
+            // The device name container has:
+            // - distinguished_kind = 0
+            // - parent_pid = 0 (root level)
+            // - pid is NOT referenced as parent_pid by other containers (not a folder)
+            let query = """
+                SELECT name FROM container
+                WHERE distinguished_kind = 0
+                AND parent_pid = 0
+                AND pid NOT IN (SELECT DISTINCT parent_pid FROM container WHERE parent_pid != 0)
+                LIMIT 1
+                """
+
             for row in try db.prepare(query) {
                 if let name = row[0] as? String, !name.isEmpty {
                     return name
