@@ -108,42 +108,77 @@ func analyzeArtworkDB(filePath: String) {
 func analyzeEntireiPod(iPodPath: String) {
     print("📱 Analyzing entire iPod at: \(iPodPath)")
     print(String(repeating: "=", count: 60))
-    
+
     guard FileManager.default.fileExists(atPath: iPodPath) else {
         print("❌ Directory not found: \(iPodPath)")
         return
     }
-    
+
     do {
-        let reader = try iPodDBReader(iPodPath: iPodPath)
-        
-        print("✅ Successfully initialized iPod reader!")
+        // Use the new simplified iPod API
+        let ipod = try iPod(path: iPodPath)
+
+        print("✅ Successfully initialized iPod!")
         print("")
-        
+
         // Device info
         print("📱 Device Information:")
-        let deviceInfo = reader.deviceInfo
-        print("   Type: \(deviceInfo["deviceType"] ?? "Unknown")")
-        print("   Base Path: \(deviceInfo["basePath"] ?? "Unknown")")
-        print("   Has Main Database: \(deviceInfo["hasMainDatabase"] ?? false)")
-        print("   Total Tracks: \(deviceInfo["trackCount"] ?? 0)")
-        print("   Total Playlists: \(deviceInfo["playlistCount"] ?? 0)")
+        print("   Type: \(ipod.deviceType.rawValue)")
+        print("   Path: \(ipod.path)")
+        print("   Total Tracks: \(ipod.trackCount)")
+        print("   Total Playlists: \(ipod.playlistCount)")
+        print("   Total Duration: \(ipod.totalDurationFormatted)")
+        print("   Total Size: \(ipod.totalSizeFormatted)")
         print("")
-        
-        // Loaded files
-        print("📁 Loaded Database Files:")
-        let loadedFiles = reader.loadedFiles
-        if loadedFiles.isEmpty {
-            print("   No database files found")
-        } else {
-            for file in loadedFiles {
-                print("   ✅ \(file)")
+
+        // Sample tracks using unified Track model
+        print("🎵 Sample Tracks:")
+        for track in ipod.tracks.prefix(5) {
+            print("   • \(track.displayName)")
+            if let artist = track.artist {
+                print("     Artist: \(artist)")
             }
+            if let album = track.album {
+                print("     Album: \(album)")
+            }
+            print("     Duration: \(track.durationFormatted)")
+            print("     Play Count: \(track.playCount)")
+            print("     Last Played: \(track.lastPlayedFormatted)")
+            print("")
         }
+
+        // Recently played
+        let recentlyPlayed = ipod.recentlyPlayed(limit: 5)
+        if !recentlyPlayed.isEmpty {
+            print("🕐 Recently Played:")
+            for track in recentlyPlayed {
+                print("   • \(track.displayName) - \(track.lastPlayedFormatted)")
+            }
+            print("")
+        }
+
+        // Most played
+        let mostPlayed = ipod.mostPlayed(limit: 5)
+        if !mostPlayed.isEmpty {
+            print("🔥 Most Played:")
+            for track in mostPlayed {
+                print("   • \(track.displayName) - \(track.playCount) plays")
+            }
+            print("")
+        }
+
+        // Statistics
+        print("📈 Library Statistics:")
+        print("   Unique Artists: \(ipod.artists.count)")
+        print("   Unique Albums: \(ipod.albums.count)")
+        print("   Unique Genres: \(ipod.genres.count)")
+        print("   Total Play Count: \(ipod.totalPlayCount)")
         print("")
-        
-        // Detailed analysis of each database
-        if let artworkDB = reader.artworkDB {
+
+        // Access raw databases for detailed analysis (progressive disclosure)
+        let databases = ipod.databases
+
+        if let artworkDB = databases.artwork {
             print("🎨 Artwork Database:")
             print("   Albums: \(artworkDB.albums.count)")
             print("   Images: \(artworkDB.images.count)")
@@ -151,8 +186,8 @@ func analyzeEntireiPod(iPodPath: String) {
             print("   Available Sizes: \(artworkDB.uniqueImageDimensions().map { "\($0.width)×\($0.height)" }.joined(separator: ", "))")
             print("")
         }
-        
-        if let photoDB = reader.photoDB {
+
+        if let photoDB = databases.photos {
             print("📸 Photo Database:")
             print("   Albums: \(photoDB.albums.count)")
             print("   Images: \(photoDB.images.count)")
@@ -161,34 +196,30 @@ func analyzeEntireiPod(iPodPath: String) {
             print("   PNG Images: \(photoDB.pngImages().count)")
             print("")
         }
-        
-        if let playCountsDB = reader.playCountsDB {
-            print("🎧 Play Counts:")
+
+        if let playCountsDB = databases.playCounts {
+            print("🎧 Play Counts Database:")
             print("   Total Entries: \(playCountsDB.entries.count)")
             print("   Played Tracks: \(playCountsDB.playedEntries().count)")
-            print("   Most Played: \(playCountsDB.mostPlayedEntries(limit: 3).map { "Track \($0.index) (\($0.entry.playCount) plays)" }.joined(separator: ", "))")
             print("")
         }
-        
-        if let otgPlaylist = reader.otgPlaylist {
+
+        if let otgPlaylist = databases.otgPlaylist {
             print("🎵 On-The-Go Playlist:")
             print("   Tracks: \(otgPlaylist.count)")
             print("   Is Empty: \(otgPlaylist.isEmpty)")
-            if !otgPlaylist.isEmpty {
-                print("   Track Indexes: \(otgPlaylist.trackIndexes.prefix(10).map(String.init).joined(separator: ", "))\(otgPlaylist.count > 10 ? "..." : "")")
-            }
             print("")
         }
-        
-        if let eqPresets = reader.equalizerPresets {
+
+        if let eqPresets = databases.equalizerPresets {
             print("🎛️ Equalizer Presets:")
             print("   Presets: \(eqPresets.presets.count)")
             print("   Preset Names: \(eqPresets.allPresetNames().joined(separator: ", "))")
             print("")
         }
-        
+
         // iPod Shuffle specific
-        if let shuffleDB = reader.shuffleDB {
+        if let shuffleDB = databases.shuffleDB {
             print("🔀 iPod Shuffle Database:")
             print("   Version: \(shuffleDB.versionNumber)")
             print("   Tracks: \(shuffleDB.numberOfTracks)")
@@ -196,8 +227,8 @@ func analyzeEntireiPod(iPodPath: String) {
             print("   File Types: \(shuffleDB.uniqueFileExtensions().joined(separator: ", "))")
             print("")
         }
-        
-        if let shuffleStats = reader.shuffleStats {
+
+        if let shuffleStats = databases.shuffleStats {
             print("📊 Shuffle Statistics:")
             print("   Entries: \(shuffleStats.entries.count)")
             print("   Played Tracks: \(shuffleStats.playedTrackCount)")
@@ -205,8 +236,8 @@ func analyzeEntireiPod(iPodPath: String) {
             print("   Total Play Count: \(shuffleStats.totalPlayCount)")
             print("")
         }
-        
-        if let playbackState = reader.playbackState {
+
+        if let playbackState = databases.playbackState {
             print("⏯️ Playback State:")
             let summary = playbackState.summary
             print("   Current Track: \(summary["currentTrack"] ?? "Unknown")")
@@ -216,19 +247,9 @@ func analyzeEntireiPod(iPodPath: String) {
             print("   Shuffle: \(summary["shuffleMode"] ?? "Unknown")")
             print("")
         }
-        
-        // Complete summary
-        print("📋 Complete Summary:")
-        let summary = reader.summary
-        if let databases = summary["databases"] as? [String: Any] {
-            for (dbName, dbInfo) in databases {
-                print("   \(dbName): \(dbInfo)")
-            }
-        }
-        
-        print("")
+
         print("✅ Complete iPod analysis finished!")
-        
+
     } catch {
         print("❌ Failed to analyze iPod: \(error)")
     }
