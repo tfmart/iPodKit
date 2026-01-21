@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 
 /// Unified iPod Database Reader supporting all iTunes database file types.
 /// 
@@ -67,7 +68,7 @@ import Foundation
 /// - ``search(_:)``
 /// - ``summary``
 /// - ``exportData()``
-public class iPodDBReader {
+internal class iPodDBReader {
     
     // MARK: - Properties
 
@@ -313,8 +314,8 @@ public class iPodDBReader {
         do {
             try loader(path)
         } catch {
-            // Optionally log the error, but don't fail the entire initialization
-            print("Warning: Failed to load \(type.rawValue): \(error)")
+            // Silently ignore - optional files may not exist or may be corrupt
+            // This is non-fatal and the reader will continue with available data
         }
     }
     
@@ -346,8 +347,8 @@ public class iPodDBReader {
     }
 }
 
-// MARK: - Public API
-public extension iPodDBReader {
+// MARK: - Internal API
+internal extension iPodDBReader {
     
     /// Get information about detected iPod
     var deviceInfo: [String: Any] {
