@@ -152,17 +152,15 @@ struct MockParseable: IPKParseable {
 iPodKit leverages protocols to enable generic programming:
 
 ```swift
-extension iPodDBReader {
-    func parseOptionalFile<T: IPKParseable>(_ type: T.Type, at path: String) -> T? {
-        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
-            return nil
-        }
-        return try? T(from: data)
+func parseOptionalFile<T: IPKParseable>(_ type: T.Type, at path: String) -> T? {
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
+        return nil
     }
+    return try? T(from: data)
 }
 ```
 
-This allows the unified reader to handle any database format without duplicated code.
+This allows the internal readers to handle any database format without duplicated code.
 
 ## Protocol Composition
 

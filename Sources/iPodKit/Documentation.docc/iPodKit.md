@@ -1,83 +1,86 @@
 # ``iPodKit``
 
-A comprehensive Swift library for parsing iTunes database files from iPod devices.
+A Swift library for reading iPod databases. Simple API, invisible complexity, gradual disclosure for power users.
 
 ## Overview
 
-iPodKit provides complete support for parsing all major iPod database formats, from the standard iTunesDB files used by classic iPods to the specialized formats used by iPod Shuffle and iPod Photo models. With its protocol-based architecture and type-safe binary parsing, iPodKit makes it easy to extract track metadata, playlists, artwork, and playback statistics from any iPod database.
-
-### Supported Devices and Formats
-
-iPodKit supports database files from all major iPod models:
-
-- **Standard iPods**: iTunesDB, Play Counts, On-The-Go Playlists, Equalizer Presets
-- **iPod Photo**: Artwork Database, Photo Database  
-- **iPod Shuffle**: iTunesSD, iTunesStats, iTunesShuffle, iTunesPState
-
-### Key Features
-
-- **Universal Parsing**: Support for 10+ different iTunes database file formats
-- **Device Auto-Detection**: Automatically identifies iPod model and loads appropriate databases
-- **Type-Safe Architecture**: Protocol-based binary parsing with comprehensive error handling
-- **Rich Metadata Access**: Complete track information, artwork, ratings, play counts, and more
-- **Search & Filter APIs**: Powerful methods for finding tracks, artists, albums, and playlists
-- **Command-Line Tools**: Built-in analyzer for testing and debugging database files
-
-## Getting Started
-
-### Installation
-
-Add iPodKit to your project using Swift Package Manager:
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/yourusername/iPodKit.git", from: "1.0.0")
-]
-```
+iPodKit provides a simple, unified API for accessing all data stored on an iPod device. It automatically detects the device type and loads all available database files, merging data from multiple sources into easy-to-use `Track` and `Playlist` objects.
 
 ### Quick Start
-
-Parse an iTunes database file:
 
 ```swift
 import iPodKit
 
-// Parse a single iTunes database file
-let reader = try iTunesDBReader(filePath: "/path/to/iTunesDB")
-print("Found \(reader.trackCount) tracks")
+// One line to read your iPod
+let ipod = try iPod(path: "/Volumes/iPod")
 
-// Parse entire iPod directory with auto-detection
-let ipodReader = try iPodDBReader(iPodPath: "/Volumes/iPod")
-print("Device Type: \(ipodReader.deviceType)")
+// Access your music
+for track in ipod.tracks {
+    print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
+}
+
+// Get recently played tracks
+let recent = ipod.recentlyPlayed(limit: 25)
+
+// Search for tracks
+let results = ipod.search("Beatles")
 ```
+
+That's it. No configuration, no database types to understand, no file paths to manage.
+
+### Supported Devices
+
+iPodKit automatically detects and supports:
+
+- **Standard iPods / iPod Classic**: All generations
+- **iPod Shuffle**: All generations
+- **iPod Photo / iPod with Color Display**
+- **iPod Nano**: All generations
+
+### Design Principles
+
+iPodKit follows modern SDK design principles:
+
+1. **Simple**: One entry point (`iPod`), sensible defaults
+2. **Invisible**: Complexity hidden, just works
+3. **Gradual**: Advanced features available when needed
 
 ## Topics
 
-### Core Architecture
+### Essentials
 
-- <doc:BinaryParsingFramework>
-- <doc:ProtocolBasedDesign>
-- <doc:ErrorHandling>
+- ``iPod``
+- ``Track``
+- ``Playlist``
 
-### Database Formats
+### Playback Information
 
-- <doc:StandardiPoddatabases>
-- <doc:iPodShuffleFormats>
-- <doc:ArtworkAndPhotoDatabase>
+- ``iPod/recentlyPlayed(limit:)``
+- ``iPod/mostPlayed(limit:)``
+- ``iPod/neverPlayed()``
+- ``iPod/topRated(minimumRating:)``
+
+### Search and Filtering
+
+- ``iPod/search(_:)``
+- ``iPod/tracks(byArtist:)``
+- ``iPod/tracks(fromAlbum:)``
+- ``iPod/tracks(inGenre:)``
 
 ### Advanced Usage
 
-- <doc:CustomParsers>
-- <doc:PerformanceOptimization>
-- <doc:DebuggingTechniques>
+For power users who need direct database access:
 
-### API Reference
+- ``iPod/DatabaseAccess``
+- ``iPod/Configuration``
 
-- ``iPodDBReader``
-- ``iTunesDBReader``
-- ``ITDBTrack``
-- ``IPKParseable``
-- ``IPKField``
+### Internal Architecture
+
+These articles explain the internal binary parsing framework:
+
+- <doc:BinaryParsingFramework>
+- <doc:ProtocolBasedDesign>
+- <doc:StandardiPoddatabases>
 
 ## See Also
 
