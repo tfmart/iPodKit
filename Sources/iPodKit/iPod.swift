@@ -446,8 +446,15 @@ private extension iPod {
     static func buildTracks(from reader: iPodDBReader) -> [Track] {
         var unifiedTracks: [Track] = []
 
+        // SQLite-based iTunes Library (newer iPods like Nano 6th/7th gen)
+        if let iTunesLibrary = reader.iTunesLibrary {
+            for (index, itLibTrack) in iTunesLibrary.tracks.enumerated() {
+                let track = Track.from(itLibTrack, index: index)
+                unifiedTracks.append(track)
+            }
+        }
         // Standard iPod with iTunesDB
-        if let iTunesDB = reader.iTunesDB {
+        else if let iTunesDB = reader.iTunesDB {
             let playCounts = reader.playCountsDB
 
             for (index, itdbTrack) in iTunesDB.tracks.enumerated() {

@@ -360,6 +360,37 @@ internal extension Track {
             dateModified: nil
         )
     }
+
+    /// Create a Track from SQLite-based iTunes Library track (newer iPods)
+    static func from(_ itLibTrack: ITLibTrack, index: Int) -> Track {
+        return Track(
+            id: UInt64(bitPattern: itLibTrack.pid),
+            index: index,
+            title: itLibTrack.title.isEmpty ? nil : itLibTrack.title,
+            artist: itLibTrack.artist.isEmpty ? nil : itLibTrack.artist,
+            album: itLibTrack.album.isEmpty ? nil : itLibTrack.album,
+            genre: nil,
+            composer: nil,
+            comment: nil,
+            grouping: nil,
+            location: nil,
+            duration: itLibTrack.durationInSeconds,
+            fileSize: 0,
+            bitrate: 0,
+            sampleRate: 0,
+            trackNumber: 0,
+            totalTracks: 0,
+            year: 0,
+            playCount: UInt32(itLibTrack.playCount),
+            skipCount: 0,
+            rating: 0,
+            lastPlayed: itLibTrack.lastPlayedDate,
+            lastSkipped: nil,
+            bookmark: nil,
+            dateAdded: nil,
+            dateModified: nil
+        )
+    }
 }
 
 // MARK: - Equatable & Hashable
