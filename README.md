@@ -69,15 +69,31 @@ print("Total duration: \(ipod.totalDurationFormatted)")
 print("Total size: \(ipod.totalSizeFormatted)")
 ```
 
-## Supported Devices
+### Device Information
 
-| Device | Database Format |
-|--------|-----------------|
-| iPod Classic | iTunesDB |
-| iPod Mini | iTunesDB |
-| iPod Nano | iTunesDB |
-| iPod Shuffle | iTunesSD |
-| iPod Photo | iTunesDB + ArtworkDB |
+```swift
+// Get device name (SQLite-based libraries only)
+if let name = ipod.deviceName {
+    print("Device: \(name)")
+}
+```
+
+## Supported Library Formats
+
+| Format | Description |
+|--------|-------------|
+| iTunesDB | Binary format used by most iPods |
+| iTunesSD | Binary format for iPod Shuffle |
+| iTunes Library (SQLite) | SQLite-based format |
+| ArtworkDB | Album artwork storage |
+
+## Tested Devices
+
+**iPod Classic**
+- 5th Generation (Video)
+
+**iPod Nano**
+- 6th Generation
 
 ## Requirements
 
