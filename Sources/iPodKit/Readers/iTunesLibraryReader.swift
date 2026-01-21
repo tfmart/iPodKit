@@ -147,40 +147,61 @@ public final class iTunesLibraryReader: Sendable {
             // Attach Dynamic database
             try db.execute("ATTACH DATABASE '\(dynamicPath.path)' AS dynamic")
 
-            // Define table and columns
-            let item = Table("item")
-            let itemStats = Table("dynamic.item_stats")
-
+            // First, get tracks from item table
+            let itemTable = Table("item")
             let pid = Expression<Int64>("pid")
-            let itemPid = Expression<Int64>("item_pid")
             let title = Expression<String?>("title")
             let artist = Expression<String?>("artist")
             let album = Expression<String?>("album")
             let totalTimeMs = Expression<Double?>("total_time_ms")
             let isSong = Expression<Int64?>("is_song")
-            let playCountUser = Expression<Int64?>("play_count_user")
-            let datePlayed = Expression<Int64?>("date_played")
 
-            // Query tracks with play stats using LEFT JOIN
-            let query = item
-                .join(.leftOuter, itemStats, on: pid == itemPid)
+            // Query songs from Library database
+            let songQuery = itemTable
                 .filter(isSong == 1)
-                .order(datePlayed.desc)
-                .select(pid, title, artist, album, totalTimeMs, playCountUser, datePlayed)
+                .select(pid, title, artist, album, totalTimeMs)
 
-            var tracks: [ITLibTrack] = []
+            var trackMap: [Int64: ITLibTrack] = [:]
 
-            for row in try db.prepare(query) {
+            for row in try db.prepare(songQuery) {
                 let track = ITLibTrack(
                     pid: row[pid],
                     title: row[title] ?? "",
                     artist: row[artist] ?? "",
                     album: row[album] ?? "",
                     totalTimeMs: row[totalTimeMs] ?? 0,
-                    playCount: Int(row[playCountUser] ?? 0),
-                    datePlayed: row[datePlayed] ?? 0
+                    playCount: 0,
+                    datePlayed: 0
                 )
-                tracks.append(track)
+                trackMap[row[pid]] = track
+            }
+
+            // Now query play stats from Dynamic database using raw SQL
+            // (attached database access works better with raw SQL)
+            let statsSQL = "SELECT item_pid, play_count_user, date_played FROM dynamic.item_stats"
+            for row in try db.prepare(statsSQL) {
+                if let itemPid = row[0] as? Int64,
+                   var track = trackMap[itemPid] {
+                    let playCount = (row[1] as? Int64) ?? 0
+                    let datePlayed = (row[2] as? Int64) ?? 0
+
+                    // Create updated track with play stats
+                    track = ITLibTrack(
+                        pid: track.pid,
+                        title: track.title,
+                        artist: track.artist,
+                        album: track.album,
+                        totalTimeMs: track.totalTimeMs,
+                        playCount: Int(playCount),
+                        datePlayed: datePlayed
+                    )
+                    trackMap[itemPid] = track
+                }
+            }
+
+            // Convert to array and sort by date played (most recent first)
+            let tracks = Array(trackMap.values).sorted { track1, track2 in
+                track1.datePlayed > track2.datePlayed
             }
 
             return tracks
