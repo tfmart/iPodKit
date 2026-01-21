@@ -21,13 +21,12 @@ let recent = ipod.recentlyPlayed(limit: 25)
 let results = ipod.search("Beatles")
 ```
 
-### Supported Devices
+### Supported Library Formats
 
-- iPod Classic (all generations)
-- iPod Mini
-- iPod Nano (all generations)
-- iPod Shuffle (all generations)
-- iPod Photo
+- **iTunesDB** - Binary format used by most iPod models
+- **iTunesSD** - Binary format used by iPod Shuffle
+- **iTunes Library (SQLite)** - SQLite-based format
+- **ArtworkDB** - Album artwork storage
 
 ## Topics
 
@@ -50,6 +49,12 @@ let results = ipod.search("Beatles")
 - ``iPod/tracks(byArtist:)``
 - ``iPod/tracks(fromAlbum:)``
 - ``iPod/tracks(inGenre:)``
+
+### Device Information
+
+- ``iPod/deviceType``
+- ``iPod/path``
+- ``iPod/deviceName``
 
 ### Advanced Usage
 
