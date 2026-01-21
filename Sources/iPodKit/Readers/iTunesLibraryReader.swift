@@ -2,7 +2,7 @@
 //  iTunesLibraryReader.swift
 //  iPodKit
 //
-//  Created by Claude on 20/01/26.
+//  Created by Tomas Martins on 20/01/26.
 //
 
 import Foundation
