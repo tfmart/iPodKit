@@ -13,9 +13,7 @@ import Foundation
 /// including volume, position, shuffle mode, and current track.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesPState
-public struct iTunesPState: IPKParseable {
-    let id: String = ""
-    
+public struct iTunesPState: IPKParseable, Sendable {
     // Binary fields (little-endian)
     public let volume: UInt32
     public let position: UInt32
@@ -76,16 +74,6 @@ public extension iTunesPState {
         return String(format: "%d:%02d", minutes, seconds)
     }
     
-    /// Whether shuffle is enabled
-    var isShuffleEnabled: Bool {
-        return shuffleMode != 0
-    }
-    
-    /// Whether repeat is enabled
-    var isRepeatEnabled: Bool {
-        return repeatMode != 0
-    }
-    
     /// Whether currently playing
     var isCurrentlyPlaying: Bool {
         return isPlaying != 0
@@ -116,11 +104,6 @@ public extension iTunesPState {
         }
     }
     
-    /// Playback state description
-    var playbackStateDescription: String {
-        return isCurrentlyPlaying ? "Playing" : "Paused"
-    }
-    
     /// Progress through current track as percentage (0-100)
     var progressPercentage: Double {
         guard remainingTime > 0 else { return 0 }
@@ -145,26 +128,6 @@ public extension iTunesPState {
 
 // MARK: - Public API
 public extension iTunesPState {
-    /// Check if playback is at the beginning of a track
-    var isAtBeginning: Bool {
-        return position == 0
-    }
-    
-    /// Check if playback is near the end of a track (within 10 seconds)
-    var isNearEnd: Bool {
-        return remainingTimeInSeconds <= 10.0
-    }
-    
-    /// Get playback progress as a fraction (0.0 to 1.0)
-    var progressFraction: Double {
-        return progressPercentage / 100.0
-    }
-    
-    /// Get volume as a fraction (0.0 to 1.0)
-    var volumeFraction: Double {
-        return Double(volume) / 255.0
-    }
-    
     /// Create a summary dictionary of the playback state
     var summary: [String: Any] {
         return [
@@ -179,81 +142,5 @@ public extension iTunesPState {
             "repeatMode": repeatModeDescription,
             "soundCheck": isSoundCheckEnabled
         ]
-    }
-    
-    /// Get detailed state information
-    var detailedInfo: [String: Any] {
-        return [
-            "currentTrack": currentTrack,
-            "position": [
-                "milliseconds": position,
-                "seconds": positionInSeconds,
-                "formatted": positionFormatted
-            ],
-            "remainingTime": [
-                "milliseconds": remainingTime,
-                "seconds": remainingTimeInSeconds,
-                "formatted": remainingTimeFormatted
-            ],
-            "totalTime": [
-                "seconds": totalTrackTime,
-                "formatted": totalTrackTimeFormatted
-            ],
-            "progress": [
-                "percentage": progressPercentage,
-                "fraction": progressFraction
-            ],
-            "volume": [
-                "raw": volume,
-                "percentage": volumePercentage,
-                "fraction": volumeFraction
-            ],
-            "playback": [
-                "isPlaying": isCurrentlyPlaying,
-                "state": playbackStateDescription,
-                "isAtBeginning": isAtBeginning,
-                "isNearEnd": isNearEnd
-            ],
-            "modes": [
-                "shuffle": [
-                    "enabled": isShuffleEnabled,
-                    "mode": shuffleMode,
-                    "description": shuffleModeDescription
-                ],
-                "repeat": [
-                    "enabled": isRepeatEnabled,
-                    "mode": repeatMode,
-                    "description": repeatModeDescription
-                ]
-            ],
-            "features": [
-                "soundCheck": isSoundCheckEnabled
-            ]
-        ]
-    }
-    
-    /// Check if the state indicates active playback
-    var isActivePlayback: Bool {
-        return isCurrentlyPlaying && position > 0 && remainingTime > 0
-    }
-    
-    /// Check if the state indicates a paused track
-    var isPaused: Bool {
-        return !isCurrentlyPlaying && position > 0
-    }
-    
-    /// Check if the state indicates stopped/idle
-    var isStopped: Bool {
-        return !isCurrentlyPlaying && position == 0
-    }
-    
-    /// Get time elapsed percentage through the track
-    var elapsedPercentage: Double {
-        return progressPercentage
-    }
-    
-    /// Get time remaining percentage of the track
-    var remainingPercentage: Double {
-        return 100.0 - progressPercentage
     }
 }

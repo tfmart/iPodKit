@@ -13,12 +13,9 @@ import Foundation
 /// It uses big-endian format and is simpler than the standard iTunesDB.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesSD
-public struct iTunesSD: IPKParseable {
-    let id: String = "BD\0\0" // Big-endian format identifier
-    
+public struct iTunesSD: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
-    public let totalLength: UInt32
     public let versionNumber: UInt32
     public let numberOfTracks: UInt32
     
@@ -41,7 +38,7 @@ public struct iTunesSD: IPKParseable {
         
         // Parse header fields (big-endian)
         self.headerLength = try Self.HeaderLength().readUInt32BigEndian(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32BigEndian(from: data)
+        _ = try Self.TotalLength().readUInt32BigEndian(from: data)
         self.versionNumber = try Self.VersionNumber().readUInt32BigEndian(from: data)
         self.numberOfTracks = try Self.NumberOfTracks().readUInt32BigEndian(from: data)
         
@@ -64,12 +61,9 @@ public struct iTunesSD: IPKParseable {
 }
 
 // MARK: - iTunesSD Track Entry
-public struct iTunesSDTrack: IPKParseable {
-    let id: String = ""
-    
+public struct iTunesSDTrack: IPKParseable, Sendable {
     // Binary fields (all big-endian)
     public let length: UInt32
-    public let fileType: UInt32
     public let startTime: UInt32
     public let stopTime: UInt32
     public let volume: UInt32
@@ -84,7 +78,7 @@ public struct iTunesSDTrack: IPKParseable {
         
         // Read binary fields (big-endian)
         self.length = try Self.Length().readUInt32BigEndian(from: data)
-        self.fileType = try Self.FileType().readUInt32BigEndian(from: data)
+        _ = try Self.FileType().readUInt32BigEndian(from: data)
         self.startTime = try Self.StartTime().readUInt32BigEndian(from: data)
         self.stopTime = try Self.StopTime().readUInt32BigEndian(from: data)
         self.volume = try Self.Volume().readUInt32BigEndian(from: data)
@@ -108,119 +102,22 @@ public extension iTunesSDTrack {
     var durationInSeconds: Double {
         return Double(length) / 1000.0
     }
-    
-    /// Track duration formatted as MM:SS
-    var durationFormatted: String {
-        let totalSeconds = Int(durationInSeconds)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-    
-    /// Start time in seconds
-    var startTimeInSeconds: Double {
-        return Double(startTime) / 1000.0
-    }
-    
-    /// Stop time in seconds
-    var stopTimeInSeconds: Double {
-        return Double(stopTime) / 1000.0
-    }
-    
-    /// Start time formatted as MM:SS
-    var startTimeFormatted: String {
-        let totalSeconds = Int(startTimeInSeconds)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-    
-    /// Stop time formatted as MM:SS
-    var stopTimeFormatted: String {
-        let totalSeconds = Int(stopTimeInSeconds)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-    
-    /// Volume as percentage (0-100)
-    var volumePercentage: Int {
-        return min(100, Int((Double(volume) / 255.0) * 100))
-    }
-    
-    /// Whether shuffle is enabled for this track
-    var isShuffleEnabled: Bool {
-        return shuffleFlag != 0
-    }
-    
-    /// Whether bookmark is enabled for this track
-    var isBookmarkEnabled: Bool {
-        return bookmarkFlag != 0
-    }
-    
+
     /// File extension
     var fileExtension: String {
         let url = URL(fileURLWithPath: filename)
         return url.pathExtension.lowercased()
     }
-    
+
     /// Display name (filename without extension)
     var displayName: String {
         let url = URL(fileURLWithPath: filename)
         return url.deletingPathExtension().lastPathComponent
     }
-    
-    /// Check if this is an MP3 file
-    var isMP3: Bool {
-        return fileExtension == "mp3"
-    }
-    
-    /// Check if this is an AAC file
-    var isAAC: Bool {
-        return fileExtension == "aac" || fileExtension == "m4a"
-    }
 }
 
 // MARK: - Public API
 public extension iTunesSD {
-    /// Get track by filename
-    /// - Parameter filename: Filename to search for
-    /// - Returns: Track if found
-    func track(withFilename filename: String) -> iTunesSDTrack? {
-        return tracks.first { $0.filename == filename }
-    }
-    
-    /// Get tracks by file extension
-    /// - Parameter extension: File extension to filter by
-    /// - Returns: Array of matching tracks
-    func tracks(withExtension extension: String) -> [iTunesSDTrack] {
-        return tracks.filter { $0.fileExtension == `extension`.lowercased() }
-    }
-    
-    /// Get MP3 tracks
-    /// - Returns: Array of MP3 tracks
-    func mp3Tracks() -> [iTunesSDTrack] {
-        return tracks.filter { $0.isMP3 }
-    }
-    
-    /// Get AAC tracks
-    /// - Returns: Array of AAC tracks
-    func aacTracks() -> [iTunesSDTrack] {
-        return tracks.filter { $0.isAAC }
-    }
-    
-    /// Get tracks with shuffle enabled
-    /// - Returns: Array of shuffle-enabled tracks
-    func shuffleTracks() -> [iTunesSDTrack] {
-        return tracks.filter { $0.isShuffleEnabled }
-    }
-    
-    /// Get tracks with bookmarks
-    /// - Returns: Array of bookmarked tracks
-    func bookmarkedTracks() -> [iTunesSDTrack] {
-        return tracks.filter { $0.isBookmarkEnabled }
-    }
-    
     /// Total duration of all tracks
     var totalDuration: Double {
         return tracks.reduce(0) { $0 + $1.durationInSeconds }
