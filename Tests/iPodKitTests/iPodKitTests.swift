@@ -65,16 +65,16 @@ import Foundation
 
 @Test func testMagicNumberValidation() async throws {
     // Test magic number validation with a concrete struct
-    struct TestObject: IPKObject {
-        let id: String = "mhbd"
+    struct TestObject: IPKParseable {
+        init(from data: Data) throws {}
     }
-    
+
     let validData = Data("mhbd".utf8)
     let invalidData = Data("abcd".utf8)
-    
+
     // This should not throw
     try TestObject.validateMagicNumber(from: validData, expectedId: "mhbd")
-    
+
     // This should throw
     #expect(throws: IPKError.self) {
         try TestObject.validateMagicNumber(from: invalidData, expectedId: "mhbd")

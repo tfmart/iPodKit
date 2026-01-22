@@ -132,22 +132,22 @@ import Foundation
 }
 
 @Test func testMagicNumberValidationEdgeCases() async throws {
-    struct TestObject: IPKObject {
-        let id: String = "test"
+    struct TestObject: IPKParseable {
+        init(from data: Data) throws {}
     }
-    
+
     // Test with empty data
     let emptyData = Data()
     #expect(throws: IPKError.self) {
         try TestObject.validateMagicNumber(from: emptyData, expectedId: "test")
     }
-    
+
     // Test with partial magic number
     let partialData = Data("te".utf8)
     #expect(throws: IPKError.self) {
         try TestObject.validateMagicNumber(from: partialData, expectedId: "test")
     }
-    
+
     // Test with correct length but wrong content
     let wrongData = Data("wxyz".utf8)
     #expect(throws: IPKError.self) {
