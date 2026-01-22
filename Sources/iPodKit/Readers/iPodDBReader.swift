@@ -498,39 +498,4 @@ internal extension iPodDBReader {
         return summary
     }
     
-    /// Search across all available databases
-    /// - Parameter query: Search query
-    /// - Returns: Dictionary of search results by database type
-    func search(_ query: String) -> [String: Any] {
-        var results: [String: Any] = [:]
-        
-        if let db = iTunesDB {
-            let tracks = db.tracks(withTitle: query) + 
-                        db.tracks(byArtist: query) + 
-                        db.tracks(fromAlbum: query)
-            if !tracks.isEmpty {
-                results["iTunesDB"] = tracks.map { $0.displayName }
-            }
-        }
-        
-        if let photo = photoDB {
-            if let album = photo.album(withName: query) {
-                results["photoAlbums"] = [album.displayName]
-            }
-        }
-        
-        if let eq = equalizerPresets {
-            if let preset = eq.preset(withName: query) {
-                results["equalizerPresets"] = [preset.displayName]
-            }
-        }
-        
-        return results
-    }
-    
-    /// Export database information to dictionary for serialization
-    /// - Returns: Complete database export
-    func exportData() -> [String: Any] {
-        return summary
-    }
 }

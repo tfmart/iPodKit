@@ -219,14 +219,6 @@ public extension Track {
         return String(format: "%d:%02d", minutes, seconds)
     }
 
-    /// File size formatted as human-readable string
-    var fileSizeFormatted: String {
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useKB, .useMB, .useGB]
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: Int64(fileSize))
-    }
-
     /// Whether this track has been played at least once
     var hasBeenPlayed: Bool {
         playCount > 0
@@ -245,15 +237,6 @@ public extension Track {
     /// Whether this track has a bookmark
     var hasBookmark: Bool {
         bookmark != nil && bookmark! > 0
-    }
-
-    /// Bookmark position formatted as MM:SS
-    var bookmarkFormatted: String? {
-        guard let bookmark = bookmark, bookmark > 0 else { return nil }
-        let totalSeconds = Int(bookmark)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
     }
 
     /// Play-to-skip ratio (useful for determining track popularity)

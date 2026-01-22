@@ -32,30 +32,6 @@ public struct ITLibTrack: Sendable {
         return totalTimeMs / 1000.0
     }
 
-    /// Track duration formatted as MM:SS
-    public var durationFormatted: String {
-        let totalSeconds = Int(durationInSeconds)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-
-    /// Formatted last played date string
-    public var lastPlayedFormatted: String {
-        guard let date = lastPlayedDate else { return "Never played" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-
-    /// Display name for the track
-    public var displayName: String {
-        if !title.isEmpty {
-            return title
-        }
-        return "Unknown Track"
-    }
 }
 
 /// Playlist information from SQLite-based iTunes Library
@@ -122,15 +98,6 @@ public final class iTunesLibraryReader: Sendable {
         let basePath = URL(fileURLWithPath: iPodPath)
         let libraryPath = basePath.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
         let dynamicPath = basePath.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Dynamic.itdb")
-        try self.init(libraryPath: libraryPath, dynamicPath: dynamicPath)
-    }
-
-    /// Initialize from iPod root URL
-    /// - Parameter iPodURL: URL to iPod root directory
-    /// - Throws: iTunesLibraryReaderError if files not found or parsing fails
-    public convenience init(iPodURL: URL) throws {
-        let libraryPath = iPodURL.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
-        let dynamicPath = iPodURL.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Dynamic.itdb")
         try self.init(libraryPath: libraryPath, dynamicPath: dynamicPath)
     }
 
