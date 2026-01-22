@@ -13,9 +13,7 @@ import Foundation
 /// Artwork files are stored separately in the iPod_Control\Artwork folder.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Artwork_Database
-public struct ArtworkDatabase: IPKParseable {
-    let id: String = "mhfd"
-    
+public struct ArtworkDatabase: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let totalLength: UInt32
@@ -70,15 +68,13 @@ public struct ArtworkDatabase: IPKParseable {
 }
 
 // MARK: - Artwork Album List
-public struct ArtworkAlbumList: IPKParseable {
-    let id: String = "mhla"
-    
-    public let headerLength: UInt32
-    public let totalLength: UInt32
-    public let numberOfAlbums: UInt32
-    public let albums: [ArtworkAlbum]
-    
-    public init(from data: Data) throws {
+struct ArtworkAlbumList: IPKParseable, Sendable {
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let numberOfAlbums: UInt32
+    let albums: [ArtworkAlbum]
+
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhla")
         
         self.headerLength = try Self.HeaderLength().readUInt32(from: data)
@@ -103,9 +99,7 @@ public struct ArtworkAlbumList: IPKParseable {
 }
 
 // MARK: - Artwork Album
-public struct ArtworkAlbum: IPKParseable {
-    let id: String = "mhod"
-    
+public struct ArtworkAlbum: IPKParseable, Sendable {
     public let headerLength: UInt32
     public let totalLength: UInt32
     public let artworkId: UInt32
@@ -122,15 +116,13 @@ public struct ArtworkAlbum: IPKParseable {
 }
 
 // MARK: - Artwork Image List
-public struct ArtworkImageList: IPKParseable {
-    let id: String = "mhli"
-    
-    public let headerLength: UInt32
-    public let totalLength: UInt32
-    public let numberOfImages: UInt32
-    public let images: [ArtworkImage]
-    
-    public init(from data: Data) throws {
+struct ArtworkImageList: IPKParseable, Sendable {
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let numberOfImages: UInt32
+    let images: [ArtworkImage]
+
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhli")
         
         self.headerLength = try Self.HeaderLength().readUInt32(from: data)
@@ -155,9 +147,7 @@ public struct ArtworkImageList: IPKParseable {
 }
 
 // MARK: - Artwork Image
-public struct ArtworkImage: IPKParseable {
-    let id: String = "mhii"
-    
+public struct ArtworkImage: IPKParseable, Sendable {
     public let headerLength: UInt32
     public let totalLength: UInt32
     public let imageId: UInt32
@@ -190,11 +180,6 @@ public extension ArtworkImage {
         return (imageWidth, imageHeight)
     }
     
-    /// Image padding as a tuple
-    var padding: (horizontal: UInt16, vertical: UInt16) {
-        return (horizontalPadding, verticalPadding)
-    }
-    
     /// Formatted image size
     var formattedSize: String {
         let formatter = ByteCountFormatter()
@@ -212,20 +197,6 @@ public extension ArtworkImage {
 
 // MARK: - Public API
 public extension ArtworkDatabase {
-    /// Get image by ID
-    /// - Parameter imageId: Image ID to search for
-    /// - Returns: Artwork image if found
-    func image(withId imageId: UInt32) -> ArtworkImage? {
-        return images.first { $0.imageId == imageId }
-    }
-    
-    /// Get album by artwork ID
-    /// - Parameter artworkId: Artwork ID to search for
-    /// - Returns: Artwork album if found
-    func album(withArtworkId artworkId: UInt32) -> ArtworkAlbum? {
-        return albums.first { $0.artworkId == artworkId }
-    }
-    
     /// Get all unique image dimensions
     /// - Returns: Array of unique dimension tuples
     func uniqueImageDimensions() -> [(width: UInt16, height: UInt16)] {

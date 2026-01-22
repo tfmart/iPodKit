@@ -13,12 +13,9 @@ import Foundation
 /// Found in "/Photos/Photo Database" on iPod Photo devices.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Photo_Database
-public struct PhotoDatabase: IPKParseable {
-    let id: String = "mhfd"
-    
+public struct PhotoDatabase: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
-    public let totalLength: UInt32
     public let versionNumber: UInt32
     public let numberOfChildren: UInt32
     
@@ -31,7 +28,7 @@ public struct PhotoDatabase: IPKParseable {
         
         // Parse header fields
         self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
+        _ = try Self.TotalLength().readUInt32(from: data)
         self.versionNumber = try Self.VersionNumber().readUInt32(from: data)
         self.numberOfChildren = try Self.NumberOfChildren().readUInt32(from: data)
         
@@ -70,15 +67,13 @@ public struct PhotoDatabase: IPKParseable {
 }
 
 // MARK: - Photo Album List
-public struct PhotoAlbumList: IPKParseable {
-    let id: String = "mhla"
-    
-    public let headerLength: UInt32
-    public let totalLength: UInt32
-    public let numberOfAlbums: UInt32
-    public let albums: [PhotoAlbum]
-    
-    public init(from data: Data) throws {
+struct PhotoAlbumList: IPKParseable, Sendable {
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let numberOfAlbums: UInt32
+    let albums: [PhotoAlbum]
+
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhla")
         
         self.headerLength = try Self.HeaderLength().readUInt32(from: data)
@@ -103,10 +98,8 @@ public struct PhotoAlbumList: IPKParseable {
 }
 
 // MARK: - Photo Album
-public struct PhotoAlbum: IPKParseable {
-    let id: String = "mhba"
-    
-    public let headerLength: UInt32
+public struct PhotoAlbum: IPKParseable, Sendable {
+    let headerLength: UInt32
     public let totalLength: UInt32
     public let numberOfPhotos: UInt32
     public let albumId: UInt32
@@ -148,15 +141,13 @@ public struct PhotoAlbum: IPKParseable {
 }
 
 // MARK: - Photo Image List
-public struct PhotoImageList: IPKParseable {
-    let id: String = "mhli"
-    
-    public let headerLength: UInt32
-    public let totalLength: UInt32
-    public let numberOfImages: UInt32
-    public let images: [PhotoImage]
-    
-    public init(from data: Data) throws {
+struct PhotoImageList: IPKParseable, Sendable {
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let numberOfImages: UInt32
+    let images: [PhotoImage]
+
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhli")
         
         self.headerLength = try Self.HeaderLength().readUInt32(from: data)
@@ -181,10 +172,8 @@ public struct PhotoImageList: IPKParseable {
 }
 
 // MARK: - Photo Image
-public struct PhotoImage: IPKParseable {
-    let id: String = "mhii"
-    
-    public let headerLength: UInt32
+public struct PhotoImage: IPKParseable, Sendable {
+    let headerLength: UInt32
     public let totalLength: UInt32
     public let imageId: UInt32
     public let originalDate: UInt32
@@ -211,54 +200,7 @@ public struct PhotoImage: IPKParseable {
 }
 
 // MARK: - Convenience Properties
-public extension PhotoAlbum {
-    /// Display name for the album
-    var displayName: String {
-        return name ?? "Unnamed Album"
-    }
-    
-    /// Number of photos in the album
-    var photoCount: Int {
-        return photoIds.count
-    }
-    
-    /// Check if album is empty
-    var isEmpty: Bool {
-        return photoIds.isEmpty
-    }
-}
-
 public extension PhotoImage {
-    /// Original date converted from Mac epoch timestamp
-    var originalDateConverted: Date? {
-        guard originalDate > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(originalDate) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
-    }
-    
-    /// Formatted original date string
-    var originalDateFormatted: String {
-        guard let date = originalDateConverted else { return "Unknown date" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
-    /// Formatted image size
-    var formattedSize: String {
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useKB, .useMB]
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: Int64(imageSize))
-    }
-    
-    /// Display name for the image
-    var displayName: String {
-        return fileName ?? "IMG_\(imageId)"
-    }
-    
     /// File extension if available
     var fileExtension: String? {
         guard let fileName = fileName else { return nil }
@@ -280,51 +222,6 @@ public extension PhotoImage {
 
 // MARK: - Public API
 public extension PhotoDatabase {
-    /// Get image by ID
-    /// - Parameter imageId: Image ID to search for
-    /// - Returns: Photo image if found
-    func image(withId imageId: UInt32) -> PhotoImage? {
-        return images.first { $0.imageId == imageId }
-    }
-    
-    /// Get album by ID
-    /// - Parameter albumId: Album ID to search for
-    /// - Returns: Photo album if found
-    func album(withId albumId: UInt32) -> PhotoAlbum? {
-        return albums.first { $0.albumId == albumId }
-    }
-    
-    /// Get album by name
-    /// - Parameter name: Album name to search for
-    /// - Returns: Photo album if found
-    func album(withName name: String) -> PhotoAlbum? {
-        return albums.first { album in
-            album.name?.localizedCaseInsensitiveContains(name) == true
-        }
-    }
-    
-    /// Get images in a specific album
-    /// - Parameter album: Photo album
-    /// - Returns: Array of images in the album
-    func images(inAlbum album: PhotoAlbum) -> [PhotoImage] {
-        return album.photoIds.compactMap { photoId in
-            image(withId: photoId)
-        }
-    }
-    
-    /// Get all album names
-    /// - Returns: Array of album names
-    func allAlbumNames() -> [String] {
-        return albums.compactMap { $0.name }
-    }
-    
-    /// Get images by file extension
-    /// - Parameter extension: File extension to filter by
-    /// - Returns: Array of matching images
-    func images(withExtension extension: String) -> [PhotoImage] {
-        return images.filter { $0.fileExtension == `extension`.lowercased() }
-    }
-    
     /// Get JPEG images
     /// - Returns: Array of JPEG images
     func jpegImages() -> [PhotoImage] {
@@ -348,16 +245,6 @@ public extension PhotoDatabase {
         formatter.allowedUnits = [.useMB, .useGB]
         formatter.countStyle = .file
         return formatter.string(fromByteCount: Int64(totalPhotoSize))
-    }
-    
-    /// Get images taken after a specific date
-    /// - Parameter date: Date to filter from
-    /// - Returns: Array of recent images
-    func images(takenAfter date: Date) -> [PhotoImage] {
-        return images.filter { image in
-            guard let originalDate = image.originalDateConverted else { return false }
-            return originalDate > date
-        }
     }
 }
 
