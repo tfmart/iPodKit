@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum IPKError: Error {
+public enum IPKError: Error, Sendable {
     case invalidOffset(Int)
     case invalidString
     case invalidMagicNumber(expected: String, found: String)
