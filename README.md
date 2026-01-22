@@ -8,7 +8,7 @@ A Swift library for reading iPod databases.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tomasmartins/iPodKit.git", from: "2.0.0")
+    .package(url: "https://github.com/tfmart/iPodKit.git", from: "2.0.0")
 ]
 ```
 
