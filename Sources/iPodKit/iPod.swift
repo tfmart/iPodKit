@@ -85,8 +85,11 @@ public final class iPod: Sendable {
     /// The detected device type
     public let deviceType: DeviceType
 
+    /// URL to the iPod root directory
+    public let url: URL
+
     /// Path to the iPod root directory
-    public let path: String
+    public var path: String { url.path }
 
     /// All tracks on the iPod, with play count data merged automatically
     public let tracks: [Track]
@@ -124,12 +127,27 @@ public final class iPod: Sendable {
 
     // MARK: - Initialization
 
-    /// Initialize an iPod instance from a path.
+    /// Initialize an iPod instance from a URL.
     ///
     /// This is the simplest way to use iPodKit. The library automatically:
     /// - Detects the device type
     /// - Loads all available database files
     /// - Merges play count data with track metadata
+    ///
+    /// ```swift
+    /// let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+    /// print("Found \(ipod.trackCount) tracks")
+    /// ```
+    ///
+    /// - Parameter url: URL to the iPod root directory
+    /// - Throws: ``IPKError`` if the URL is invalid or database files cannot be parsed
+    public convenience init(url: URL) throws {
+        try self.init(configuration: Configuration(url: url))
+    }
+
+    /// Initialize an iPod instance from a path string.
+    ///
+    /// This is a convenience initializer that converts the string path to a URL.
     ///
     /// ```swift
     /// let ipod = try iPod(path: "/Volumes/iPod")
@@ -139,15 +157,24 @@ public final class iPod: Sendable {
     /// - Parameter path: Path to the iPod root directory
     /// - Throws: ``IPKError`` if the path is invalid or database files cannot be parsed
     public convenience init(path: String) throws {
-        try self.init(configuration: Configuration(path: path))
+        try self.init(url: URL(fileURLWithPath: path))
     }
 
-    /// Initialize with a URL.
+    /// Start building a configured iPod instance.
+    ///
+    /// Use this method for advanced configuration options:
+    ///
+    /// ```swift
+    /// let ipod = try iPod.configure(url: URL(fileURLWithPath: "/Volumes/iPod"))
+    ///     .loadArtwork(true)
+    ///     .loadPhotos(true)
+    ///     .build()
+    /// ```
     ///
     /// - Parameter url: URL to the iPod root directory
-    /// - Throws: ``IPKError`` if the URL is invalid or database files cannot be parsed
-    public convenience init(url: URL) throws {
-        try self.init(path: url.path)
+    /// - Returns: A configuration builder
+    public static func configure(url: URL) -> Configuration.Builder {
+        Configuration.Builder(url: url)
     }
 
     /// Start building a configured iPod instance.
@@ -164,16 +191,16 @@ public final class iPod: Sendable {
     /// - Parameter path: Path to the iPod root directory
     /// - Returns: A configuration builder
     public static func configure(path: String) -> Configuration.Builder {
-        Configuration.Builder(path: path)
+        Configuration.Builder(url: URL(fileURLWithPath: path))
     }
 
     // MARK: - Internal Initialization
 
     internal init(configuration: Configuration) throws {
-        self.path = configuration.path
+        self.url = configuration.url
 
         // Use internal reader to load databases
-        let reader = try iPodDBReader(iPodPath: configuration.path)
+        let reader = try iPodDBReader(iPodPath: configuration.url.path)
 
         // Map device type
         self.deviceType = Self.mapDeviceType(reader.deviceType)
@@ -182,7 +209,7 @@ public final class iPod: Sendable {
         self.tracks = Self.buildTracks(from: reader)
 
         // Build unified playlist list
-        self.playlists = Self.buildPlaylists(from: reader, tracks: self.tracks)
+        self.playlists = Self.buildPlaylists(from: reader)
 
         // Create database access wrapper
         self.databases = DatabaseAccess(reader: reader)
@@ -517,7 +544,7 @@ private extension iPod {
         return unifiedTracks
     }
 
-    static func buildPlaylists(from reader: iPodDBReader, tracks: [Track]) -> [Playlist] {
+    static func buildPlaylists(from reader: iPodDBReader) -> [Playlist] {
         var playlists: [Playlist] = []
 
         // Standard iPod with iTunesDB
@@ -550,14 +577,14 @@ private extension iPod {
 
         // SQLite-based iTunes Library
         if let iTunesLibrary = reader.iTunesLibrary {
-            let libraryPlaylists = Self.buildSQLitePlaylists(from: iTunesLibrary, tracks: tracks)
+            let libraryPlaylists = Self.buildSQLitePlaylists(from: iTunesLibrary)
             playlists.append(contentsOf: libraryPlaylists)
         }
 
         return playlists
     }
 
-    static func buildSQLitePlaylists(from library: iTunesLibraryReader, tracks: [Track]) -> [Playlist] {
+    static func buildSQLitePlaylists(from library: iTunesLibraryReader) -> [Playlist] {
         // SQLite library playlists are parsed separately
         return library.playlists.map { libPlaylist in
             Playlist.from(
@@ -576,40 +603,40 @@ extension iPod {
 
     /// Configuration options for iPod initialization.
     ///
-    /// Use ``iPod/configure(path:)`` to create a builder:
+    /// Use ``iPod/configure(url:)`` or ``iPod/configure(path:)`` to create a builder:
     ///
     /// ```swift
-    /// let ipod = try iPod.configure(path: "/Volumes/iPod")
+    /// let ipod = try iPod.configure(url: URL(fileURLWithPath: "/Volumes/iPod"))
     ///     .build()
     /// ```
     public struct Configuration: Sendable {
 
-        /// Path to the iPod root directory
-        public let path: String
+        /// URL to the iPod root directory
+        public let url: URL
 
-        internal init(path: String) {
-            self.path = path
+        internal init(url: URL) {
+            self.url = url
         }
 
         /// Builder for creating iPod configurations with progressive disclosure.
         ///
         /// ```swift
-        /// let ipod = try iPod.configure(path: "/Volumes/iPod")
+        /// let ipod = try iPod.configure(url: URL(fileURLWithPath: "/Volumes/iPod"))
         ///     .build()
         /// ```
-        public final class Builder: @unchecked Sendable {
-            private let path: String
+        public final class Builder: Sendable {
+            private let url: URL
 
-            internal init(path: String) {
-                self.path = path
+            internal init(url: URL) {
+                self.url = url
             }
 
             /// Build the iPod instance with the configured options.
             ///
-            /// - Throws: ``IPKError`` if the path is invalid or database files cannot be parsed
+            /// - Throws: ``IPKError`` if the URL is invalid or database files cannot be parsed
             /// - Returns: Configured iPod instance
             public func build() throws -> iPod {
-                let configuration = Configuration(path: path)
+                let configuration = Configuration(url: url)
                 return try iPod(configuration: configuration)
             }
         }
@@ -633,7 +660,7 @@ extension iPod {
     ///     }
     /// }
     /// ```
-    public struct DatabaseAccess: @unchecked Sendable {
+    public struct DatabaseAccess: Sendable {
 
         /// Raw iTunesDB reader (standard iPods)
         public let iTunesDB: iTunesDBReader?
