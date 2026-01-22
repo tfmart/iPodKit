@@ -41,10 +41,6 @@ extension IPKField {
         return try data.readUInt64(at: offset)
     }
     
-    func readString(from data: Data) throws -> String {
-        return try data.readString(at: offset, length: length)
-    }
-    
     func readBytes(from data: Data) throws -> Data {
         return try data.readBytes(at: offset, length: length)
     }
