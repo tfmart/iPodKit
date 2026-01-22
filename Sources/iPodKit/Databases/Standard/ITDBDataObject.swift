@@ -10,25 +10,22 @@ import Foundation
 /// Data Object in iTunes database
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Data_Object
-public struct ITDBDataObject: IPKParseable {
-    let id: String = "mhod"
-    
+struct ITDBDataObject: IPKParseable, Sendable {
     let headerLength: UInt32
     let totalLength: UInt32
     let type: TypeIdentifier
-    let position: UInt32
     let stringValue: String?
-    
-    public init(from data: Data) throws {
+
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhod")
-        
+
         self.headerLength = try Self.HeaderLength().readUInt32(from: data)
         self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        
+
         let typeRaw = try Self.DataType().readUInt32(from: data)
         self.type = TypeIdentifier(rawValue: typeRaw) ?? .unknown
-        
-        self.position = try Self.Position().readUInt32(from: data)
+
+        _ = try Self.Position().readUInt32(from: data)
         
         // Parse string data if this is a string type
         if self.type.isStringType {
@@ -58,16 +55,6 @@ extension ITDBDataObject {
     
     struct DataType: IPKField {
         var offset: Int { 12 }
-        var length: Int { 4 }
-    }
-    
-    struct Unknown1: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-    }
-    
-    struct Unknown2: IPKField {
-        var offset: Int { 20 }
         var length: Int { 4 }
     }
     

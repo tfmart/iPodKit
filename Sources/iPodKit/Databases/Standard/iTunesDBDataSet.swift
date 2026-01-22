@@ -11,8 +11,6 @@ import Foundation
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#DataSet
 public struct iTunesDBDataSet: IPKParseable {
-    let id = "mhsd"
-    
     public let headerLength: UInt32
     public let totalLength: UInt32
     public let type: UInt32

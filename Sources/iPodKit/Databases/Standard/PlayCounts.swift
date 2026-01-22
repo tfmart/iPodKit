@@ -13,9 +13,7 @@ import Foundation
 /// since the last sync with iTunes. It gets rebuilt whenever the iTunesDB changes.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Play_Counts_File
-public struct PlayCounts: IPKParseable {
-    let id: String = "mhdp"
-    
+public struct PlayCounts: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let entryLength: UInt32
@@ -51,9 +49,7 @@ public struct PlayCounts: IPKParseable {
 }
 
 // MARK: - Play Count Entry
-public struct PlayCountEntry: IPKParseable {
-    let id: String = "mhpo"
-    
+public struct PlayCountEntry: IPKParseable, Sendable {
     // Binary fields
     public let playCount: UInt32
     public let lastPlayed: UInt32
@@ -112,15 +108,6 @@ public extension PlayCountEntry {
         return formatter.string(from: date)
     }
     
-    /// Formatted last skipped date string
-    var lastSkippedFormatted: String {
-        guard let date = lastSkippedDate else { return "Never skipped" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
     /// Star rating (0-5)
     var starRating: Int {
         return Int(rating) / 20
@@ -150,16 +137,6 @@ public extension PlayCounts {
     func playedEntries() -> [(index: Int, entry: PlayCountEntry)] {
         return entries.enumerated().compactMap { index, entry in
             entry.playCount > 0 ? (index, entry) : nil
-        }
-    }
-    
-    /// Get entries played after a specific date
-    /// - Parameter date: Date to filter from
-    /// - Returns: Array of recently played entries with their indexes
-    func entries(playedAfter date: Date) -> [(index: Int, entry: PlayCountEntry)] {
-        return entries.enumerated().compactMap { index, entry in
-            guard let lastPlayed = entry.lastPlayedDate else { return nil }
-            return lastPlayed > date ? (index, entry) : nil
         }
     }
     

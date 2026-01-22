@@ -71,16 +71,13 @@ import Foundation
 /// - ``fileSizeFormatted``
 /// 
 /// Reference: [iTunes Database Track Item Specification](http://www.ipodlinux.org/ITunesDB/#Track_Item)
-public struct ITDBTrack: IPKParseable {
-    let id: String = "mhit"
-    
+public struct ITDBTrack: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let totalLength: UInt32
     public let numberOfStrings: UInt32
     public let uniqueId: UInt32
     public let visible: UInt32
-    public let fileType: UInt32
     public let rating: UInt8
     public let lastModified: UInt32
     public let size: UInt32
@@ -112,7 +109,7 @@ public struct ITDBTrack: IPKParseable {
         self.numberOfStrings = try Self.Strings().readUInt32(from: data)
         self.uniqueId = try Self.Identifier().readUInt32(from: data)
         self.visible = try Self.Visible().readUInt32(from: data)
-        self.fileType = try Self.FileType().readUInt32(from: data)
+        _ = try Self.FileType().readUInt32(from: data)
         self.rating = try Self.Rating().readUInt8(from: data)
         self.lastModified = try Self.LastModified().readUInt32(from: data)
         self.size = try Self.Size().readUInt32(from: data)
@@ -168,16 +165,15 @@ public extension ITDBTrack {
         let seconds = totalSeconds % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
-    
+
     /// File size formatted as human readable string
     var fileSizeFormatted: String {
-        let bytes = Double(size)
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useKB, .useMB, .useGB]
         formatter.countStyle = .file
-        return formatter.string(fromByteCount: Int64(bytes))
+        return formatter.string(fromByteCount: Int64(size))
     }
-    
+
     /// Whether this track is visible in the UI
     var isVisible: Bool {
         return visible == 1
@@ -304,189 +300,14 @@ extension ITDBTrack {
         var offset: Int { 60 }
         var length: Int { 4 }
     }
-    
-    struct Volume: IPKField {
-        var offset: Int { 64 }
-        var length: Int { 4 }
-    }
-    
-    struct StartTime: IPKField {
-        var offset: Int { 68 }
-        var length: Int { 4 }
-    }
-    
-    struct StopTime: IPKField {
-        var offset: Int { 72 }
-        var length: Int { 4 }
-    }
-    
-    struct SoundCheck: IPKField {
-        var offset: Int { 76 }
-        var length: Int { 4 }
-    }
-    
+
     struct PlayCount: IPKField {
         var offset: Int { 80 }
         var length: Int { 4 }
     }
-    
-    struct PlayCountUser: IPKField {
-        var offset: Int { 84 }
-        var length: Int { 4 }
-    }
-    
+
     struct LastPlayed: IPKField {
         var offset: Int { 88 }
-        var length: Int { 4 }
-    }
-    
-    struct DiskNumber: IPKField {
-        var offset: Int { 92 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalDisks: IPKField {
-        var offset: Int { 96 }
-        var length: Int { 4 }
-    }
-    
-    struct UserID: IPKField {
-        var offset: Int { 100 }
-        var length: Int { 4 }
-    }
-    
-    struct DateAdded: IPKField {
-        var offset: Int { 104 }
-        var length: Int { 4 }
-    }
-    
-    struct BookmarkTime: IPKField {
-        var offset: Int { 108 }
-        var length: Int { 4 }
-    }
-    
-    struct DBId: IPKField {
-        var offset: Int { 112 }
-        var length: Int { 8 }
-    }
-    
-    struct Checked: IPKField {
-        var offset: Int { 120 }
-        var length: Int { 1 }
-    }
-    
-    struct ApplicationRating: IPKField {
-        var offset: Int { 121 }
-        var length: Int { 1 }
-    }
-    
-    struct BPM: IPKField {
-        var offset: Int { 122 }
-        var length: Int { 2 }
-    }
-    
-    struct ArtworkCount: IPKField {
-        var offset: Int { 124 }
-        var length: Int { 2 }
-    }
-    
-    struct ArtworkSize: IPKField {
-        var offset: Int { 126 }
-        var length: Int { 2 }
-    }
-    
-    struct CompilationFlag: IPKField {
-        var offset: Int { 154 }
-        var length: Int { 1 }
-    }
-    
-    struct ArtworkId: IPKField {
-        var offset: Int { 200 }
-        var length: Int { 4 }
-    }
-    
-    struct Type1: IPKField {
-        var offset: Int { 28 }
-        var length: Int { 1 }
-    }
-    
-    struct Type2: IPKField {
-        var offset: Int { 29 }
-        var length: Int { 1 }
-    }
-    
-    struct DateReleased: IPKField {
-        var offset: Int { 140 }
-        var length: Int { 4 }
-    }
-    
-    struct SampleRate2: IPKField {
-        var offset: Int { 136 }
-        var length: Int { 4 }
-    }
-    
-    struct SkipCount: IPKField {
-        var offset: Int { 156 }
-        var length: Int { 4 }
-    }
-    
-    struct LastSkipped: IPKField {
-        var offset: Int { 160 }
-        var length: Int { 4 }
-    }
-    
-    struct HasArtwork: IPKField {
-        var offset: Int { 164 }
-        var length: Int { 1 }
-    }
-    
-    struct SkipWhenShuffling: IPKField {
-        var offset: Int { 165 }
-        var length: Int { 1 }
-    }
-    
-    struct RememberPlaybackPosition: IPKField {
-        var offset: Int { 166 }
-        var length: Int { 1 }
-    }
-    
-    struct PodcastFlag: IPKField {
-        var offset: Int { 167 }
-        var length: Int { 1 }
-    }
-    
-    struct DBId2: IPKField {
-        var offset: Int { 168 }
-        var length: Int { 8 }
-    }
-    
-    struct LyricsFlag: IPKField {
-        var offset: Int { 176 }
-        var length: Int { 1 }
-    }
-    
-    struct MovieFileFlag: IPKField {
-        var offset: Int { 177 }
-        var length: Int { 1 }
-    }
-    
-    struct PlayedMark: IPKField {
-        var offset: Int { 178 }
-        var length: Int { 1 }
-    }
-    
-    struct MediaType: IPKField {
-        var offset: Int { 208 }
-        var length: Int { 4 }
-    }
-    
-    struct SeasonNumber: IPKField {
-        var offset: Int { 212 }
-        var length: Int { 4 }
-    }
-    
-    struct EpisodeNumber: IPKField {
-        var offset: Int { 216 }
         var length: Int { 4 }
     }
 }

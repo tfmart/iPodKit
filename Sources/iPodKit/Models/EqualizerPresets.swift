@@ -13,9 +13,7 @@ import Foundation
 /// Note: iPods don't actually use this file yet according to documentation.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Equalizer_Presets_File
-public struct EqualizerPresets: IPKParseable {
-    let id: String = "mqed"
-    
+public struct EqualizerPresets: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let entryLength: UInt32
@@ -51,9 +49,7 @@ public struct EqualizerPresets: IPKParseable {
 }
 
 // MARK: - Equalizer Preset Entry
-public struct EqualizerPreset: IPKParseable {
-    let id: String = "eqpr"
-    
+public struct EqualizerPreset: IPKParseable, Sendable {
     // Binary fields - 10 frequency bands typical for iTunes EQ
     public let band32Hz: Int16
     public let band64Hz: Int16
@@ -99,57 +95,8 @@ public struct EqualizerPreset: IPKParseable {
     }
 }
 
-// MARK: - Convenience Properties
-public extension EqualizerPreset {
-    /// All frequency band values as an array
-    var frequencyBands: [Int16] {
-        return [band32Hz, band64Hz, band125Hz, band250Hz, band500Hz,
-                band1kHz, band2kHz, band4kHz, band8kHz, band16kHz]
-    }
-    
-    /// Frequency band labels
-    static var frequencyLabels: [String] {
-        return ["32Hz", "64Hz", "125Hz", "250Hz", "500Hz",
-                "1kHz", "2kHz", "4kHz", "8kHz", "16kHz"]
-    }
-    
-    /// Get frequency bands with their labels
-    var frequencyBandsWithLabels: [(frequency: String, value: Int16)] {
-        return zip(Self.frequencyLabels, frequencyBands).map { ($0, $1) }
-    }
-    
-    /// Display name for the preset
-    var displayName: String {
-        return name ?? "Unnamed Preset"
-    }
-    
-    /// Check if this is a flat/neutral EQ setting
-    var isFlat: Bool {
-        return frequencyBands.allSatisfy { $0 == 0 } && preamp == 0
-    }
-    
-    /// Convert band values to decibel representation (assuming values are in 1/10 dB)
-    func bandValueInDecibels(_ bandValue: Int16) -> Double {
-        return Double(bandValue) / 10.0
-    }
-    
-    /// Preamp value in decibels
-    var preampInDecibels: Double {
-        return Double(preamp) / 10.0
-    }
-}
-
 // MARK: - Public API
 public extension EqualizerPresets {
-    /// Get preset by name
-    /// - Parameter name: Preset name to search for
-    /// - Returns: First preset matching the name
-    func preset(withName name: String) -> EqualizerPreset? {
-        return presets.first { preset in
-            preset.name?.localizedCaseInsensitiveContains(name) == true
-        }
-    }
-    
     /// Get all preset names
     /// - Returns: Array of preset names
     func allPresetNames() -> [String] {
@@ -159,12 +106,6 @@ public extension EqualizerPresets {
     /// Check if any presets are defined
     var hasPresets: Bool {
         return !presets.isEmpty
-    }
-    
-    /// Get flat/neutral presets
-    /// - Returns: Array of flat EQ presets
-    func flatPresets() -> [EqualizerPreset] {
-        return presets.filter { $0.isFlat }
     }
 }
 

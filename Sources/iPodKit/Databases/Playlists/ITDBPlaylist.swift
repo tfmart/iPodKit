@@ -11,9 +11,7 @@ import Foundation
 /// Playlist object in iTunes database
 ///
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Playlist
-struct ITDBPlaylist: IPKParseable {
-    let id: String = "mhyp"
-
+struct ITDBPlaylist: IPKParseable, Sendable {
     let headerLength: UInt32
     let totalLength: UInt32
     let dataObjectChildCount: UInt32
@@ -123,11 +121,6 @@ extension ITDBPlaylist {
         var length: Int { 1 }
     }
     
-    struct Unknown: IPKField {
-        var offset: Int { 21 }
-        var length: Int { 3 }
-    }
-    
     struct Timestamp: IPKField {
         var offset: Int { 24 }
         var length: Int { 4 }
@@ -138,23 +131,8 @@ extension ITDBPlaylist {
         var length: Int { 8 }
     }
     
-    struct Unknown3: IPKField {
-        var offset: Int { 36 }
-        var length: Int { 4 }
-    }
-    
-    struct StringMHODCount: IPKField {
-        var offset: Int { 40 }
-        var length: Int { 2 }
-    }
-    
     struct PodcastFlag: IPKField {
         var offset: Int { 42 }
         var length: Int { 2 }
-    }
-    
-    struct ListSortOrder: IPKField {
-        var offset: Int { 44 }
-        var length: Int { 4 }
     }
 }

@@ -13,12 +13,9 @@ import Foundation
 /// on the iPod using track indexes. It becomes invalid when iTunesDB changes.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#OTG_Playlist_File
-public struct OTGPlaylist: IPKParseable {
-    let id: String = "mhpo"
-    
+public struct OTGPlaylist: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
-    public let entryLength: UInt32
     public let numberOfSongs: UInt32
     
     // Track index entries
@@ -29,7 +26,7 @@ public struct OTGPlaylist: IPKParseable {
         
         // Parse header fields
         self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.entryLength = try Self.EntryLength().readUInt32(from: data)
+        _ = try Self.EntryLength().readUInt32(from: data)
         self.numberOfSongs = try Self.NumberOfSongs().readUInt32(from: data)
         
         // Parse track indexes
@@ -54,28 +51,10 @@ public extension OTGPlaylist {
     var isEmpty: Bool {
         return trackIndexes.isEmpty
     }
-    
+
     /// Get the number of tracks in the playlist
     var count: Int {
         return trackIndexes.count
-    }
-    
-    /// Get track indexes as an array for easy iteration
-    var tracks: [UInt32] {
-        return trackIndexes
-    }
-    
-    /// Check if a specific track index is in the playlist
-    /// - Parameter trackIndex: Track index to check
-    /// - Returns: True if the track is in the playlist
-    func containsTrack(withIndex trackIndex: UInt32) -> Bool {
-        return trackIndexes.contains(trackIndex)
-    }
-    
-    /// Get track indexes in order they were added
-    /// - Returns: Array of track indexes
-    func orderedTrackIndexes() -> [UInt32] {
-        return trackIndexes
     }
 }
 
