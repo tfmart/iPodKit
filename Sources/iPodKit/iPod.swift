@@ -100,15 +100,6 @@ public final class iPod: Sendable {
     /// Access to raw database files for advanced use cases
     public let databases: DatabaseAccess
 
-    /// The device name as stored in the iTunes Library database.
-    ///
-    /// This is the name assigned to the iPod in iTunes/Finder, if available.
-    /// This property is populated from the SQLite-based iTunes Library format.
-    ///
-    /// > Note: Only available for iPods using the SQLite-based iTunes Library.
-    /// > iPods using the binary iTunesDB format do not store the device name.
-    public let deviceName: String?
-
     // MARK: - Device Type
 
     /// Represents the type of iPod device
@@ -213,40 +204,6 @@ public final class iPod: Sendable {
 
         // Create database access wrapper
         self.databases = DatabaseAccess(reader: reader)
-
-        // Extract device name from SQLite database if available
-        self.deviceName = reader.iTunesLibrary?.deviceName
-    }
-}
-
-// MARK: - Static Device Info
-
-public extension iPod {
-
-    /// Get the device name from an iPod's iTunes Library without loading tracks.
-    ///
-    /// This is a convenience method for quickly extracting the device name
-    /// from an iPod without parsing all track data. Works with iPods that
-    /// use the SQLite-based iTunes Library format.
-    ///
-    /// ```swift
-    /// if let name = iPod.deviceName(fromPath: "/Volumes/iPod") {
-    ///     print("Device is named: \(name)")
-    /// }
-    /// ```
-    ///
-    /// - Parameter path: Path to iPod root directory
-    /// - Returns: Device name if found, nil otherwise
-    static func deviceName(fromPath path: String) -> String? {
-        iTunesLibraryReader.deviceName(fromIPodPath: path)
-    }
-
-    /// Get the device name from an iPod's iTunes Library without loading tracks.
-    ///
-    /// - Parameter url: URL to iPod root directory
-    /// - Returns: Device name if found, nil otherwise
-    static func deviceName(fromURL url: URL) -> String? {
-        iTunesLibraryReader.deviceName(fromIPodURL: url)
     }
 }
 

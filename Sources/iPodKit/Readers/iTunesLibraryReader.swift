@@ -83,12 +83,6 @@ public final class iTunesLibraryReader: Sendable {
     /// Internal accessor for playlists
     internal var playlists: [ITLibPlaylist] { _playlists }
 
-    /// The device name as stored in the iTunes Library database.
-    ///
-    /// This is the name assigned to the iPod in iTunes, extracted from
-    /// the `container` table in Library.itdb.
-    public let deviceName: String?
-
     // MARK: - Initialization
 
     /// Initialize from iPod root directory
@@ -123,9 +117,6 @@ public final class iTunesLibraryReader: Sendable {
 
         // Parse playlists from container table
         self._playlists = Self.parsePlaylists(libraryPath: libraryPath)
-
-        // Extract device name from container table
-        self.deviceName = Self.parseDeviceName(libraryPath: libraryPath)
     }
 
     // MARK: - Private Methods
@@ -198,42 +189,6 @@ public final class iTunesLibraryReader: Sendable {
             return tracks
         } catch {
             throw iTunesLibraryReaderError.databaseError(error.localizedDescription)
-        }
-    }
-
-    /// Extracts the device name from the container table in Library.itdb.
-    ///
-    /// The container table stores the iPod's name as assigned in iTunes/Music app.
-    /// The device name is stored as a special container entry created during sync.
-    /// It's a root-level container (parent_pid = 0) with distinguished_kind = 0
-    /// that is NOT a parent of other containers (not a playlist folder).
-    private static func parseDeviceName(libraryPath: URL) -> String? {
-        do {
-            let db = try Connection(libraryPath.path, readonly: true)
-
-            // The device name container has:
-            // - parent_pid = 0 (root level)
-            // - distinguished_kind = 0 (regular container, not a system playlist)
-            // - pid is NOT used as parent_pid by other containers (not a folder)
-            let query = """
-                SELECT name FROM container
-                WHERE parent_pid = 0
-                AND distinguished_kind = 0
-                AND pid NOT IN (SELECT DISTINCT parent_pid FROM container WHERE parent_pid != 0)
-                AND name IS NOT NULL AND name != ''
-                LIMIT 1
-                """
-
-            for row in try db.prepare(query) {
-                if let name = row[0] as? String, !name.isEmpty {
-                    return name
-                }
-            }
-
-            return nil
-        } catch {
-            // Silently return nil - device name is optional
-            return nil
         }
     }
 
@@ -317,35 +272,6 @@ public final class iTunesLibraryReader: Sendable {
         let dynamicPath = iPodURL.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Dynamic.itdb")
         let fm = FileManager.default
         return fm.fileExists(atPath: libraryPath.path) && fm.fileExists(atPath: dynamicPath.path)
-    }
-
-    /// Get device name from iPod path without loading the full library.
-    ///
-    /// This is a convenience method for quickly extracting just the device name
-    /// from an iPod's iTunes Library database without parsing all tracks.
-    ///
-    /// ```swift
-    /// if let name = iTunesLibraryReader.deviceName(fromIPodPath: "/Volumes/iPod") {
-    ///     print("Device name: \(name)")
-    /// }
-    /// ```
-    ///
-    /// - Parameter iPodPath: Path to iPod root directory
-    /// - Returns: Device name if found, nil otherwise
-    public static func deviceName(fromIPodPath iPodPath: String) -> String? {
-        let libraryPath = URL(fileURLWithPath: iPodPath)
-            .appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
-        return parseDeviceName(libraryPath: libraryPath)
-    }
-
-    /// Get device name from iPod URL without loading the full library.
-    ///
-    /// - Parameter iPodURL: URL to iPod root directory
-    /// - Returns: Device name if found, nil otherwise
-    public static func deviceName(fromIPodURL iPodURL: URL) -> String? {
-        let libraryPath = iPodURL
-            .appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
-        return parseDeviceName(libraryPath: libraryPath)
     }
 }
 

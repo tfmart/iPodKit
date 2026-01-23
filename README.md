@@ -69,15 +69,6 @@ print("Total duration: \(ipod.totalDurationFormatted)")
 print("Total size: \(ipod.totalSizeFormatted)")
 ```
 
-### Device Information
-
-```swift
-// Get device name (SQLite-based libraries only)
-if let name = ipod.deviceName {
-    print("Device: \(name)")
-}
-```
-
 ## Supported Library Formats
 
 | Format | Description |

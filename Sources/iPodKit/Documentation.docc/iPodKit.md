@@ -54,7 +54,6 @@ let results = ipod.search("Beatles")
 
 - ``iPod/deviceType``
 - ``iPod/path``
-- ``iPod/deviceName``
 
 ### Advanced Usage
 

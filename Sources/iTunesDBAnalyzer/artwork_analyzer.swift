@@ -123,9 +123,6 @@ func analyzeEntireiPod(iPodPath: String) {
 
         // Device info
         print("📱 Device Information:")
-        if let deviceName = ipod.deviceName {
-            print("   Name: \(deviceName)")
-        }
         print("   Type: \(ipod.deviceType.rawValue)")
         print("   Path: \(ipod.path)")
         print("   Total Tracks: \(ipod.trackCount)")
