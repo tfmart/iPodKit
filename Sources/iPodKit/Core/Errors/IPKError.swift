@@ -14,6 +14,8 @@ public enum IPKError: Error, Sendable {
     case insufficientData
     case corruptedData
     case fieldSizeMismatch(expected: Int, actual: Int, field: String)
+    case artworkNotFound
+    case artworkDecodingFailed
 }
 
 extension IPKError: LocalizedError {
@@ -31,6 +33,10 @@ extension IPKError: LocalizedError {
             return "Data appears to be corrupted"
         case .fieldSizeMismatch(let expected, let actual, let field):
             return "Field size mismatch in \(field): expected \(expected) bytes, got \(actual) bytes"
+        case .artworkNotFound:
+            return "Artwork not found"
+        case .artworkDecodingFailed:
+            return "Failed to decode artwork image"
         }
     }
 }
