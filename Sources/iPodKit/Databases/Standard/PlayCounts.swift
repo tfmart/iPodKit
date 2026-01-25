@@ -13,7 +13,7 @@ import Foundation
 /// since the last sync with iTunes. It gets rebuilt whenever the iTunesDB changes.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Play_Counts_File
-public struct PlayCounts: IPKParseable, Sendable {
+struct PlayCounts: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let entryLength: UInt32
@@ -49,7 +49,7 @@ public struct PlayCounts: IPKParseable, Sendable {
 }
 
 // MARK: - Play Count Entry
-public struct PlayCountEntry: IPKParseable, Sendable {
+struct PlayCountEntry: IPKParseable, Sendable {
     // Binary fields
     public let playCount: UInt32
     public let lastPlayed: UInt32
@@ -82,7 +82,7 @@ public struct PlayCountEntry: IPKParseable, Sendable {
 }
 
 // MARK: - Convenience Properties
-public extension PlayCountEntry {
+extension PlayCountEntry {
     /// Last played date converted from Mac epoch timestamp
     var lastPlayedDate: Date? {
         guard lastPlayed > 0 else { return nil }
@@ -123,7 +123,7 @@ public extension PlayCountEntry {
 }
 
 // MARK: - Public API
-public extension PlayCounts {
+extension PlayCounts {
     /// Get play count entry for a specific track by index
     /// - Parameter trackIndex: Zero-based track index
     /// - Returns: Play count entry if found

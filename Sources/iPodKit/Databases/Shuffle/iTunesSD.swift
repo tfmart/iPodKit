@@ -13,7 +13,7 @@ import Foundation
 /// It uses big-endian format and is simpler than the standard iTunesDB.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesSD
-public struct iTunesSD: IPKParseable, Sendable {
+struct iTunesSD: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let versionNumber: UInt32
@@ -61,7 +61,7 @@ public struct iTunesSD: IPKParseable, Sendable {
 }
 
 // MARK: - iTunesSD Track Entry
-public struct iTunesSDTrack: IPKParseable, Sendable {
+struct iTunesSDTrack: IPKParseable, Sendable {
     // Binary fields (all big-endian)
     public let length: UInt32
     public let startTime: UInt32
@@ -97,7 +97,7 @@ public struct iTunesSDTrack: IPKParseable, Sendable {
 }
 
 // MARK: - Convenience Properties
-public extension iTunesSDTrack {
+extension iTunesSDTrack {
     /// Track duration in seconds
     var durationInSeconds: Double {
         return Double(length) / 1000.0
@@ -117,7 +117,7 @@ public extension iTunesSDTrack {
 }
 
 // MARK: - Public API
-public extension iTunesSD {
+extension iTunesSD {
     /// Total duration of all tracks
     var totalDuration: Double {
         return tracks.reduce(0) { $0 + $1.durationInSeconds }

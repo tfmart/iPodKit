@@ -13,7 +13,7 @@ import Foundation
 /// including volume, position, shuffle mode, and current track.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesPState
-public struct iTunesPState: IPKParseable, Sendable {
+struct iTunesPState: IPKParseable, Sendable {
     // Binary fields (little-endian)
     public let volume: UInt32
     public let position: UInt32
@@ -42,7 +42,7 @@ public struct iTunesPState: IPKParseable, Sendable {
 }
 
 // MARK: - Convenience Properties
-public extension iTunesPState {
+extension iTunesPState {
     /// Volume as percentage (0-100)
     var volumePercentage: Int {
         return min(100, Int((Double(volume) / 255.0) * 100))
@@ -127,7 +127,7 @@ public extension iTunesPState {
 }
 
 // MARK: - Public API
-public extension iTunesPState {
+extension iTunesPState {
     /// Create a summary dictionary of the playback state
     var summary: [String: Any] {
         return [

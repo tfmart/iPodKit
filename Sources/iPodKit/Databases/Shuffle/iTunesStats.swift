@@ -13,7 +13,7 @@ import Foundation
 /// It stores play counts, ratings, and last played times in little-endian format.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesStats
-public struct iTunesStats: IPKParseable, Sendable {
+struct iTunesStats: IPKParseable, Sendable {
     // Binary fields
     public let numberOfEntries: UInt32
     public let entryLength: UInt32
@@ -49,7 +49,7 @@ public struct iTunesStats: IPKParseable, Sendable {
 }
 
 // MARK: - iTunes Stat Entry
-public struct iTunesStatEntry: IPKParseable, Sendable {
+struct iTunesStatEntry: IPKParseable, Sendable {
     // Binary fields (little-endian)
     public let playCount: UInt32
     public let lastPlayed: UInt32
@@ -74,7 +74,7 @@ public struct iTunesStatEntry: IPKParseable, Sendable {
 }
 
 // MARK: - Convenience Properties
-public extension iTunesStatEntry {
+extension iTunesStatEntry {
     /// Last played date converted from Mac epoch timestamp
     var lastPlayedDate: Date? {
         guard lastPlayed > 0 else { return nil }
@@ -123,7 +123,7 @@ public extension iTunesStatEntry {
 }
 
 // MARK: - Public API
-public extension iTunesStats {
+extension iTunesStats {
     /// Get stat entry for a specific track by index
     /// - Parameter trackIndex: Zero-based track index
     /// - Returns: Stat entry if found

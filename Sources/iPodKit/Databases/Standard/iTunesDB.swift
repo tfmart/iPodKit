@@ -10,7 +10,7 @@ import Foundation
 /// This is the primary database for the iPod. It contains all information about the songs that the iPod is capable of playing, as well as the playlists. It's never written to by the Apple iPod firmware. During an autosync, iTunes completely overwrites this file.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Database_Object
-public struct iTunesDB: IPKParseable, Sendable {
+struct iTunesDB: IPKParseable, Sendable {
     public let headerLength: UInt32
     public let totalLength: UInt32
     public let versionNumber: UInt32

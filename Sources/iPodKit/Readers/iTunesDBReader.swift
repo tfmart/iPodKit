@@ -12,7 +12,7 @@ import Foundation
 /// This class provides a convenient interface for reading and parsing
 /// iTunes DB files from iPods, handling the hierarchical structure
 /// and providing easy access to tracks and playlists.
-public final class iTunesDBReader: Sendable {
+final class iTunesDBReader: Sendable {
 
     // MARK: - Properties
 
@@ -135,7 +135,7 @@ public final class iTunesDBReader: Sendable {
 
 // MARK: - Public API
 
-public extension iTunesDBReader {
+extension iTunesDBReader {
 
     /// Get the total number of tracks
     var trackCount: Int {

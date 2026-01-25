@@ -71,7 +71,7 @@ import Foundation
 /// - ``fileSizeFormatted``
 /// 
 /// Reference: [iTunes Database Track Item Specification](http://www.ipodlinux.org/ITunesDB/#Track_Item)
-public struct ITDBTrack: IPKParseable, Sendable {
+struct ITDBTrack: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let totalLength: UInt32
@@ -174,7 +174,7 @@ public struct ITDBTrack: IPKParseable, Sendable {
 }
 
 // MARK: - Convenience Properties
-public extension ITDBTrack {
+extension ITDBTrack {
     /// Track duration in seconds
     var durationInSeconds: Double {
         return Double(length) / 1000.0

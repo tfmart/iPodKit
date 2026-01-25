@@ -11,7 +11,7 @@ import Foundation
 ///
 /// This is a flattened representation combining data from mhii and mhni.
 /// For new code, prefer using `ArtworkImageItem` and `ArtworkThumbnail`.
-public struct ArtworkImage: Sendable {
+struct ArtworkImage: Sendable {
     public let correlationId: UInt32
     public let ithmbOffset: UInt32
     public let imageSize: UInt32
@@ -43,7 +43,7 @@ public struct ArtworkImage: Sendable {
 }
 
 // MARK: - Convenience Properties
-public extension ArtworkImage {
+extension ArtworkImage {
     /// Image dimensions as a tuple
     var dimensions: (width: UInt16, height: UInt16) {
         (imageWidth, imageHeight)

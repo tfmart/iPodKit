@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct PhotoImage: IPKParseable, Sendable {
+struct PhotoImage: IPKParseable, Sendable {
     let headerLength: UInt32
     public let totalLength: UInt32
     public let imageId: UInt32
@@ -34,7 +34,7 @@ public struct PhotoImage: IPKParseable, Sendable {
     }
 }
 
-public extension PhotoImage {
+extension PhotoImage {
     /// File extension if available
     var fileExtension: String? {
         guard let fileName = fileName else { return nil }

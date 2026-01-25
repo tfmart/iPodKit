@@ -13,7 +13,7 @@ import Foundation
 /// a consistent shuffle sequence across power cycles and syncs.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesShuffle
-public struct iTunesShuffle: IPKParseable, Sendable {
+struct iTunesShuffle: IPKParseable, Sendable {
     // Binary fields
     public let numberOfTracks: UInt32
     
@@ -45,7 +45,7 @@ public struct iTunesShuffle: IPKParseable, Sendable {
 }
 
 // MARK: - Convenience Properties
-public extension iTunesShuffle {
+extension iTunesShuffle {
     /// Get the number of tracks in the shuffle sequence
     var count: Int {
         return shuffledIndexes.count
@@ -83,7 +83,7 @@ public extension iTunesShuffle {
 }
 
 // MARK: - Public API
-public extension iTunesShuffle {
+extension iTunesShuffle {
     /// Get statistics about the shuffle sequence
     /// - Returns: Dictionary containing shuffle statistics
     func shuffleStatistics() -> [String: Any] {

@@ -10,7 +10,7 @@ import Foundation
 /// DataSet object in iTunes database
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#DataSet
-public struct iTunesDBDataSet: IPKParseable {
+struct iTunesDBDataSet: IPKParseable {
     public let headerLength: UInt32
     public let totalLength: UInt32
     public let type: UInt32

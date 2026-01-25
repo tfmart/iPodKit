@@ -13,7 +13,7 @@ import Foundation
 /// on the iPod using track indexes. It becomes invalid when iTunesDB changes.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#OTG_Playlist_File
-public struct OTGPlaylist: IPKParseable, Sendable {
+struct OTGPlaylist: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let numberOfSongs: UInt32
@@ -46,7 +46,7 @@ public struct OTGPlaylist: IPKParseable, Sendable {
 }
 
 // MARK: - Public API
-public extension OTGPlaylist {
+extension OTGPlaylist {
     /// Check if the playlist is empty
     var isEmpty: Bool {
         return trackIndexes.isEmpty

@@ -13,7 +13,7 @@ import Foundation
 /// Found in "/Photos/Photo Database" on iPod Photo devices.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Photo_Database
-public struct PhotoDatabase: IPKParseable, Sendable {
+struct PhotoDatabase: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let versionNumber: UInt32
@@ -67,7 +67,7 @@ public struct PhotoDatabase: IPKParseable, Sendable {
 }
 
 // MARK: - Public API
-public extension PhotoDatabase {
+extension PhotoDatabase {
     /// Get JPEG images
     /// - Returns: Array of JPEG images
     func jpegImages() -> [PhotoImage] {

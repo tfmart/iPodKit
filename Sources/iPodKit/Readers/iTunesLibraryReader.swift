@@ -9,7 +9,7 @@ import Foundation
 import SQLite
 
 /// Track information from SQLite-based iTunes Library
-public struct ITLibTrack: Sendable {
+struct ITLibTrack: Sendable {
     public let pid: Int64
     public let title: String
     public let artist: String
@@ -43,7 +43,7 @@ struct ITLibPlaylist: Sendable {
 }
 
 /// Error types for iTunes Library Reader
-public enum iTunesLibraryReaderError: Error, Sendable {
+enum iTunesLibraryReaderError: Error, Sendable {
     case fileNotFound(String)
     case databaseError(String)
 }
@@ -71,7 +71,7 @@ public enum iTunesLibraryReaderError: Error, Sendable {
 /// The iTunes Library uses two main SQLite database files:
 /// - `Library.itdb` - Contains track metadata (title, artist, album, etc.)
 /// - `Dynamic.itdb` - Contains dynamic data (play counts, ratings, etc.)
-public final class iTunesLibraryReader: Sendable {
+final class iTunesLibraryReader: Sendable {
 
     // MARK: - Properties
 
@@ -282,7 +282,7 @@ public final class iTunesLibraryReader: Sendable {
 
 // MARK: - Public API
 
-public extension iTunesLibraryReader {
+extension iTunesLibraryReader {
 
     /// Get the total number of tracks
     var trackCount: Int {
