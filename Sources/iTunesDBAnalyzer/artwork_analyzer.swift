@@ -34,14 +34,14 @@ func analyzeEntireiPod(iPodPath: String) {
 
         print("Sample Tracks:")
         for track in ipod.tracks.prefix(10) {
-            print("   \(track.displayName)")
+            print("   \(track.title ?? "Unknown Track")")
             if let artist = track.artist {
                 print("      Artist: \(artist)")
             }
             if let album = track.album {
                 print("      Album: \(album)")
             }
-            print("      Duration: \(track.durationFormatted)")
+            print("      Duration: \(formatDuration(track.duration))")
             if let artwork = track.artwork {
                 let sizesStr = artwork.sizes.map { "\($0.width)x\($0.height)" }.joined(separator: ", ")
                 print("      Artwork: \(sizesStr)")
@@ -69,7 +69,7 @@ func testArtworkLoading(iPodPath: String) {
             return
         }
 
-        print("Track: \(trackWithArtwork.displayName)")
+        print("Track: \(trackWithArtwork.title ?? "Unknown Track")")
         if let artist = trackWithArtwork.artist {
             print("Artist: \(artist)")
         }
@@ -124,7 +124,7 @@ func exportAllArtwork(iPodPath: String) {
         for track in tracksWithArtwork {
             guard let artwork = track.artwork else { continue }
 
-            let safeName = sanitizeFilename("\(track.artist ?? "Unknown") - \(track.displayName)")
+            let safeName = sanitizeFilename("\(track.artist ?? "Unknown") - \(track.title ?? "Unknown Track")")
 
             do {
                 let image = try artwork.loadImage()
@@ -163,4 +163,15 @@ func exportAllArtwork(iPodPath: String) {
 private func sanitizeFilename(_ name: String) -> String {
     let invalidChars = CharacterSet(charactersIn: "/\\:*?\"<>|")
     return name.components(separatedBy: invalidChars).joined(separator: "_")
+}
+
+private func formatDuration(_ duration: TimeInterval) -> String {
+    let totalSeconds = Int(duration)
+    let hours = totalSeconds / 3600
+    let minutes = (totalSeconds % 3600) / 60
+    let seconds = totalSeconds % 60
+    if hours > 0 {
+        return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+    }
+    return String(format: "%d:%02d", minutes, seconds)
 }

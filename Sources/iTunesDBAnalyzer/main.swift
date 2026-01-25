@@ -101,13 +101,13 @@ do {
     let artists = reader.allArtists()
     let albums = reader.allAlbums()
     let genres = reader.allGenres()
-    
+
     print("📈 Library Statistics:")
     print("   Unique Artists: \(artists.count)")
     print("   Unique Albums: \(albums.count)")
     print("   Unique Genres: \(genres.count)")
     print("")
-    
+
     if !artists.isEmpty {
         print("👤 Artists (first 10): \(artists.prefix(10).joined(separator: ", "))")
     }
