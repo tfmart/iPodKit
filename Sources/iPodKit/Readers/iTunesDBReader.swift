@@ -152,6 +152,11 @@ extension iTunesDBReader {
         return database.versionNumber
     }
 
+    /// Device name extracted from the master playlist
+    var deviceName: String? {
+        return playlists.first { $0.isMasterPlaylist }?.name
+    }
+
     /// Get tracks filtered by a predicate
     /// - Parameter predicate: Filter condition
     /// - Returns: Filtered tracks
