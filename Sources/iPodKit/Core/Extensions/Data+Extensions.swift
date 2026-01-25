@@ -21,6 +21,11 @@ extension Data {
         }
         return UInt16(self[offset]) | (UInt16(self[offset + 1]) << 8)
     }
+
+    func readInt16(at offset: Int) throws -> Int16 {
+        let unsigned = try readUInt16(at: offset)
+        return Int16(bitPattern: unsigned)
+    }
     
     func readUInt32(at offset: Int) throws -> UInt32 {
         guard offset >= 0 && offset + 3 < count else {
