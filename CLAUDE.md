@@ -19,7 +19,9 @@ swift test
 swift test --filter iPodKitTests
 
 # Build and run the analyzer tool
-swift run analyze-itunes-db --ipod /path/to/iPod
+swift run analyze-itunes-db /path/to/iPod
+swift run analyze-itunes-db --test-artwork /path/to/iPod
+swift run analyze-itunes-db --export-artwork /path/to/iPod
 ```
 
 ## SDK Design Principles
@@ -28,7 +30,7 @@ iPodKit follows three core principles:
 
 1. **Simple** - Single entry point (`iPod` class), minimal API surface
 2. **Invisible** - Complexity hidden internally, sensible defaults
-3. **Gradual** - Progressive disclosure via `Configuration.Builder` and `databases` accessor
+3. **Gradual** - Progressive disclosure for advanced use cases
 
 ## Core Architecture
 
@@ -39,21 +41,27 @@ The primary public interface consists of:
 - **`iPod`** - Main entry point, the façade that abstracts all complexity
 - **`Track`** - Unified track model combining data from multiple sources
 - **`Playlist`** - Unified playlist model
-- **`iPod.Configuration.Builder`** - Progressive disclosure for advanced options
-- **`iPod.DatabaseAccess`** - Raw database access for power users
+- **`Artwork`** - Album artwork with multiple size options
+- **`MediaType`** - Track media type (audio, video, podcast, etc.)
+- **`iPodModel`** - iPod device model identification
+- **`IPKError`** - Error types for parsing failures
 
 ```swift
-// Simple usage
-let ipod = try iPod(path: "/Volumes/iPod")
-let recent = ipod.recentlyPlayed()
+// Initialize from URL
+let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
 
-// Advanced usage
-let ipod = try iPod.configure(path: "/Volumes/iPod")
-    .loadArtwork(true)
-    .build()
+// Access device info
+print(ipod.deviceName ?? "Unknown")
+print("Tracks: \(ipod.tracks.count)")
+print("Playlists: \(ipod.playlists.count)")
 
-// Power user access
-if let artworkDB = ipod.databases.artwork { ... }
+// Access track data
+for track in ipod.tracks {
+    print("\(track.title ?? "Unknown") - \(track.artist ?? "Unknown")")
+    if let artwork = track.artwork {
+        let image = try artwork.loadImage()
+    }
+}
 ```
 
 ### Internal Implementation Layer
@@ -108,7 +116,9 @@ Sources/iPodKit/
 ├── Models/
 │   ├── Track.swift            # Unified track model
 │   ├── Playlist.swift         # Unified playlist model
-│   └── EqualizerPresets.swift
+│   ├── Artwork.swift          # Album artwork model
+│   ├── MediaType.swift        # Track media type enum
+│   └── iPodModel.swift        # Device model identification
 └── Readers/
     ├── iPodDBReader.swift     # Internal orchestrator
     ├── iTunesDBReader.swift   # iTunesDB parser
