@@ -185,3 +185,10 @@ logger.debug("Parsed \(trackCount) tracks")
 ```
 
 Never use `print()` statements in library code.
+
+## Git Commit Guidelines
+
+- **Do not auto-commit or push** - Only commit or push when explicitly requested
+- Commit changes **gradually in logical batches** (e.g., one file or one feature per commit)
+- Use **short descriptive messages only** - No long descriptions or bullet points
+- **No co-author tags** - Do not add `Co-Authored-By` to commit messages
