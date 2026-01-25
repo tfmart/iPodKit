@@ -80,6 +80,9 @@ final class iTunesLibraryReader: Sendable {
     public let libraryPath: URL
     public let dynamicPath: URL
 
+    /// Device name extracted from the root container (e.g., "John's iPod")
+    public let deviceName: String?
+
     /// Internal accessor for playlists
     internal var playlists: [ITLibPlaylist] { _playlists }
 
@@ -117,6 +120,9 @@ final class iTunesLibraryReader: Sendable {
 
         // Parse playlists from container table
         self._playlists = Self.parsePlaylists(libraryPath: libraryPath)
+
+        // Extract device name from root container
+        self.deviceName = Self.parseDeviceName(libraryPath: libraryPath)
     }
 
     // MARK: - Private Methods
@@ -257,6 +263,33 @@ final class iTunesLibraryReader: Sendable {
         }
 
         return playlists
+    }
+
+    /// Parses the device name from the primary container referenced in db_info.
+    ///
+    /// The device name (e.g., "John's iPod") is stored in the container table.
+    /// The primary container ID is stored in db_info.primary_container_pid.
+    private static func parseDeviceName(libraryPath: URL) -> String? {
+        do {
+            let db = try Connection(libraryPath.path, readonly: true)
+
+            // Get the device name from the primary container
+            // db_info.primary_container_pid references the main library container
+            let query = """
+                SELECT c.name FROM container c
+                JOIN db_info d ON c.pid = d.primary_container_pid
+                """
+
+            for row in try db.prepare(query) {
+                if let name = row[0] as? String {
+                    return name
+                }
+            }
+        } catch {
+            // Silently return nil - device name is optional
+        }
+
+        return nil
     }
 
     // MARK: - Static Methods
