@@ -91,6 +91,13 @@ internal class iPodDBReader {
 
     public private(set) var basePath: String
     public private(set) var deviceType: iPodDeviceType
+
+    /// Device name extracted from database files (e.g., "John's iPod")
+    /// For SQLite-based iTunes Library, extracted from primary container.
+    /// For binary iTunesDB, extracted from master playlist name.
+    public var deviceName: String? {
+        return iTunesLibrary?.deviceName ?? iTunesDB?.deviceName
+    }
     
     // MARK: - Device Type Detection
 
