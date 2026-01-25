@@ -244,6 +244,10 @@ internal class iPodDBReader {
 
     private func loadSQLiteLibraryFiles() throws {
         iTunesLibrary = try iTunesLibraryReader(iPodPath: basePath)
+
+        loadOptionalFile(.artworkDB) { path in
+            artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
+        }
     }
     
     private func loadStandardFiles() throws {
@@ -251,18 +255,22 @@ internal class iPodDBReader {
         if let path = findFilePath(for: .iTunesDB) {
             iTunesDB = try iTunesDBReader(filePath: path)
         }
-        
+
         // Load optional files
         loadOptionalFile(.playCounts) { path in
             playCountsDB = try PlayCounts(from: Data(contentsOf: URL(fileURLWithPath: path)))
         }
-        
+
         loadOptionalFile(.otgPlaylist) { path in
             otgPlaylist = try OTGPlaylist(from: Data(contentsOf: URL(fileURLWithPath: path)))
         }
-        
+
         loadOptionalFile(.equalizerPresets) { path in
             equalizerPresets = try EqualizerPresets(from: Data(contentsOf: URL(fileURLWithPath: path)))
+        }
+
+        loadOptionalFile(.artworkDB) { path in
+            artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
         }
     }
     
@@ -447,9 +455,7 @@ internal extension iPodDBReader {
         
         if let art = artworkDB {
             databases["artworkDB"] = [
-                "albums": art.albums.count,
-                "images": art.images.count,
-                "totalSize": art.formattedTotalSize
+                "images": art.imageItems.count
             ]
         }
         

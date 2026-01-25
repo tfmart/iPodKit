@@ -133,6 +133,11 @@ public struct Track: Sendable, Identifiable, Hashable {
     /// Date the track was last modified
     public let dateModified: Date?
 
+    // MARK: - Artwork
+
+    /// Artwork for this track (if available)
+    public let artwork: Artwork?
+
     // MARK: - Internal Initializer
 
     internal init(
@@ -160,7 +165,8 @@ public struct Track: Sendable, Identifiable, Hashable {
         lastSkipped: Date?,
         bookmark: TimeInterval?,
         dateAdded: Date?,
-        dateModified: Date?
+        dateModified: Date?,
+        artwork: Artwork? = nil
     ) {
         self.id = id
         self.index = index
@@ -187,6 +193,7 @@ public struct Track: Sendable, Identifiable, Hashable {
         self.bookmark = bookmark
         self.dateAdded = dateAdded
         self.dateModified = dateModified
+        self.artwork = artwork
     }
 }
 
@@ -263,7 +270,9 @@ internal extension Track {
     static func from(
         _ itdbTrack: ITDBTrack,
         index: Int,
-        playCountEntry: PlayCountEntry? = nil
+        playCountEntry: PlayCountEntry? = nil,
+        artwork: ArtworkImageItem? = nil,
+        iPodURL: URL
     ) -> Track {
         // Merge play data - prefer PlayCounts file as it has more recent data
         let playCount = playCountEntry?.playCount ?? itdbTrack.playCount
@@ -274,7 +283,7 @@ internal extension Track {
         let bookmark = playCountEntry.map { TimeInterval($0.bookmarkTime) / 1000.0 }
 
         return Track(
-            id: UInt64(itdbTrack.uniqueId),
+            id: itdbTrack.dbid,
             index: index,
             title: itdbTrack.title,
             artist: itdbTrack.artist,
@@ -298,7 +307,8 @@ internal extension Track {
             lastSkipped: lastSkipped,
             bookmark: bookmark,
             dateAdded: nil,
-            dateModified: itdbTrack.lastModifiedDate
+            dateModified: itdbTrack.lastModifiedDate,
+            artwork: artwork.map { Artwork(from: $0, iPodURL: iPodURL) }
         )
     }
 
@@ -315,6 +325,7 @@ internal extension Track {
         let rating = statEntry.map { $0.starRating } ?? 0
         let bookmark = statEntry.map { $0.bookmarkTimeInSeconds }
 
+        // iPod Shuffle doesn't support artwork
         return Track(
             id: UInt64(index),
             index: index,
@@ -340,12 +351,13 @@ internal extension Track {
             lastSkipped: lastSkipped,
             bookmark: bookmark,
             dateAdded: nil,
-            dateModified: nil
+            dateModified: nil,
+            artwork: nil
         )
     }
 
     /// Create a Track from SQLite-based iTunes Library track (newer iPods)
-    static func from(_ itLibTrack: ITLibTrack, index: Int) -> Track {
+    static func from(_ itLibTrack: ITLibTrack, index: Int, artwork: ArtworkImageItem? = nil, iPodURL: URL) -> Track {
         return Track(
             id: UInt64(bitPattern: itLibTrack.pid),
             index: index,
@@ -371,7 +383,8 @@ internal extension Track {
             lastSkipped: nil,
             bookmark: nil,
             dateAdded: nil,
-            dateModified: nil
+            dateModified: nil,
+            artwork: artwork.map { Artwork(from: $0, iPodURL: iPodURL) }
         )
     }
 }

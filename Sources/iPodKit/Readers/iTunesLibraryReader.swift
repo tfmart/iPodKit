@@ -192,23 +192,28 @@ public final class iTunesLibraryReader: Sendable {
         }
     }
 
-    /// Parses playlists from the container and containee tables.
+    /// Parses playlists from the container and item_to_container tables.
     ///
-    /// Playlists in iTunes Library are stored as containers with distinguished_kind = 0.
-    /// The containee table links containers to their track items.
+    /// Playlists in iTunes Library are stored as containers.
+    /// The item_to_container table links containers to their track items.
     private static func parsePlaylists(libraryPath: URL) -> [ITLibPlaylist] {
         var playlists: [ITLibPlaylist] = []
 
         do {
             let db = try Connection(libraryPath.path, readonly: true)
 
-            // Query playlists (containers that are not the device name and not folders)
-            // distinguished_kind = 0 for regular playlists, 4 for Music, etc.
-            // We want containers that have items (are actual playlists)
+            // Query user playlists:
+            // - Must have items (tracks)
+            // - Exclude folders (containers that have children)
+            // - Exclude system playlists (distinguished_kind != 0)
+            // - Exclude device sync playlists (containers with no parent that match device name pattern)
             let playlistQuery = """
-                SELECT c.pid, c.name, c.distinguished_kind
+                SELECT c.pid, c.name, c.distinguished_kind, c.parent_pid
                 FROM container c
-                WHERE c.pid IN (SELECT DISTINCT container_pid FROM containee)
+                WHERE c.pid IN (SELECT DISTINCT container_pid FROM item_to_container)
+                  AND c.pid NOT IN (SELECT DISTINCT parent_pid FROM container WHERE parent_pid != 0)
+                  AND c.distinguished_kind = 0
+                  AND c.parent_pid != 0
                 ORDER BY c.name
                 """
 
@@ -227,9 +232,9 @@ public final class iTunesLibraryReader: Sendable {
             // For each playlist, get its track PIDs
             for playlist in playlistData {
                 let trackQuery = """
-                    SELECT item_pid FROM containee
+                    SELECT item_pid FROM item_to_container
                     WHERE container_pid = \(playlist.id)
-                    ORDER BY position
+                    ORDER BY physical_order
                     """
 
                 var trackPids: [Int64] = []
