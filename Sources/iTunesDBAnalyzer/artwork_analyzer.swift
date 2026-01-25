@@ -16,6 +16,9 @@ func analyzeEntireiPod(iPodPath: String) {
     do {
         let ipod = try iPod(url: URL(fileURLWithPath: iPodPath))
 
+        if let deviceName = ipod.deviceName {
+            print("Device: \(deviceName)")
+        }
         print("Path: \(ipod.path)")
         print("Tracks: \(ipod.tracks.count)")
         print("Playlists: \(ipod.playlists.count)")
