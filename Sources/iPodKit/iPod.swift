@@ -24,6 +24,9 @@ public final class iPod: Sendable {
     /// Path to the iPod root directory
     public var path: String { url.path }
 
+    /// Device name as configured in iTunes
+    public let deviceName: String?
+
     /// All tracks on the iPod
     public let tracks: [Track]
 
@@ -39,9 +42,7 @@ public final class iPod: Sendable {
     public init(url: URL) throws {
         self.url = url
         let reader = try iPodDBReader(iPodPath: url.path)
-
-        // Build artwork index for lookup during track creation
-        // Only include items that have actual thumbnails
+        self.deviceName = reader.deviceName
         var artworkIndex: [UInt64: ArtworkImageItem] = [:]
         if let artworkDB = reader.artworkDB {
             for item in artworkDB.imageItems where !item.thumbnails.isEmpty {
