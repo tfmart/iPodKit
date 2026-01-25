@@ -20,8 +20,6 @@ swift test --filter iPodKitTests
 
 # Build and run the analyzer tool
 swift run analyze-itunes-db /path/to/iPod
-swift run analyze-itunes-db --test-artwork /path/to/iPod
-swift run analyze-itunes-db --export-artwork /path/to/iPod
 ```
 
 ## SDK Design Principles
