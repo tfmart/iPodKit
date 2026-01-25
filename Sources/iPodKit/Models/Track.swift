@@ -107,6 +107,33 @@ public struct Track: Sendable, Identifiable, Hashable {
     /// Release year
     public let year: UInt32
 
+    /// Disc number in a multi-disc set
+    public let discNumber: UInt32
+
+    /// Total number of discs in the set
+    public let totalDiscs: UInt32
+
+    /// Beats per minute
+    public let bpm: UInt16
+
+    /// Whether this track is part of a compilation album
+    public let isCompilation: Bool
+
+    /// The type of media (audio, video, podcast, etc.)
+    public let mediaType: MediaType
+
+    /// Volume adjustment (-255 to +255, representing -100% to +100%)
+    public let volumeAdjustment: Int32
+
+    /// Start time in milliseconds (custom playback start point)
+    public let startTime: UInt32
+
+    /// Stop time in milliseconds (custom playback end point, 0 means play to end)
+    public let stopTime: UInt32
+
+    /// SoundCheck value for volume normalization
+    public let soundCheck: UInt32
+
     // MARK: - User Data
 
     /// Number of times the track has been played
@@ -158,6 +185,15 @@ public struct Track: Sendable, Identifiable, Hashable {
         trackNumber: UInt32,
         totalTracks: UInt32,
         year: UInt32,
+        discNumber: UInt32 = 0,
+        totalDiscs: UInt32 = 0,
+        bpm: UInt16 = 0,
+        isCompilation: Bool = false,
+        mediaType: MediaType = .audio,
+        volumeAdjustment: Int32 = 0,
+        startTime: UInt32 = 0,
+        stopTime: UInt32 = 0,
+        soundCheck: UInt32 = 0,
         playCount: UInt32,
         skipCount: UInt32,
         rating: Int,
@@ -185,6 +221,15 @@ public struct Track: Sendable, Identifiable, Hashable {
         self.trackNumber = trackNumber
         self.totalTracks = totalTracks
         self.year = year
+        self.discNumber = discNumber
+        self.totalDiscs = totalDiscs
+        self.bpm = bpm
+        self.isCompilation = isCompilation
+        self.mediaType = mediaType
+        self.volumeAdjustment = volumeAdjustment
+        self.startTime = startTime
+        self.stopTime = stopTime
+        self.soundCheck = soundCheck
         self.playCount = playCount
         self.skipCount = skipCount
         self.rating = rating
@@ -194,71 +239,6 @@ public struct Track: Sendable, Identifiable, Hashable {
         self.dateAdded = dateAdded
         self.dateModified = dateModified
         self.artwork = artwork
-    }
-}
-
-// MARK: - Convenience Properties
-
-public extension Track {
-
-    /// Display name - uses title if available, otherwise filename from location
-    var displayName: String {
-        if let title = title, !title.isEmpty {
-            return title
-        }
-        if let location = location, !location.isEmpty {
-            let url = URL(fileURLWithPath: location)
-            return url.deletingPathExtension().lastPathComponent
-        }
-        return "Unknown Track"
-    }
-
-    /// Duration formatted as MM:SS or HH:MM:SS
-    var durationFormatted: String {
-        let totalSeconds = Int(duration)
-        let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
-        let seconds = totalSeconds % 60
-
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        }
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-
-    /// Whether this track has been played at least once
-    var hasBeenPlayed: Bool {
-        playCount > 0
-    }
-
-    /// Whether this track has been skipped at least once
-    var hasBeenSkipped: Bool {
-        skipCount > 0
-    }
-
-    /// Whether this track has a rating
-    var hasRating: Bool {
-        rating > 0
-    }
-
-    /// Whether this track has a bookmark
-    var hasBookmark: Bool {
-        bookmark != nil && bookmark! > 0
-    }
-
-    /// Play-to-skip ratio (useful for determining track popularity)
-    var playToSkipRatio: Double {
-        guard skipCount > 0 else { return playCount > 0 ? .infinity : 0 }
-        return Double(playCount) / Double(skipCount)
-    }
-
-    /// Last played date formatted as a string
-    var lastPlayedFormatted: String {
-        guard let date = lastPlayed else { return "Never played" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
     }
 }
 
@@ -300,13 +280,22 @@ internal extension Track {
             trackNumber: itdbTrack.trackNumber,
             totalTracks: itdbTrack.totalTracks,
             year: itdbTrack.year,
+            discNumber: itdbTrack.discNumber,
+            totalDiscs: itdbTrack.totalDiscs,
+            bpm: itdbTrack.bpm,
+            isCompilation: itdbTrack.isCompilation,
+            mediaType: MediaType(rawValue: itdbTrack.mediaType),
+            volumeAdjustment: itdbTrack.volumeAdjustment,
+            startTime: itdbTrack.startTime,
+            stopTime: itdbTrack.stopTime,
+            soundCheck: itdbTrack.soundCheck,
             playCount: playCount,
             skipCount: skipCount,
             rating: rating,
             lastPlayed: lastPlayed,
             lastSkipped: lastSkipped,
             bookmark: bookmark,
-            dateAdded: nil,
+            dateAdded: itdbTrack.dateAddedDate,
             dateModified: itdbTrack.lastModifiedDate,
             artwork: artwork.map { Artwork(from: $0, iPodURL: iPodURL) }
         )
@@ -325,7 +314,7 @@ internal extension Track {
         let rating = statEntry.map { $0.starRating } ?? 0
         let bookmark = statEntry.map { $0.bookmarkTimeInSeconds }
 
-        // iPod Shuffle doesn't support artwork
+        // iPod Shuffle doesn't support artwork or extended metadata
         return Track(
             id: UInt64(index),
             index: index,
@@ -344,6 +333,15 @@ internal extension Track {
             trackNumber: 0,
             totalTracks: 0,
             year: 0,
+            discNumber: 0,
+            totalDiscs: 0,
+            bpm: 0,
+            isCompilation: false,
+            mediaType: .audio,
+            volumeAdjustment: 0,
+            startTime: 0,
+            stopTime: 0,
+            soundCheck: 0,
             playCount: playCount,
             skipCount: skipCount,
             rating: rating,
@@ -376,6 +374,15 @@ internal extension Track {
             trackNumber: 0,
             totalTracks: 0,
             year: 0,
+            discNumber: 0,
+            totalDiscs: 0,
+            bpm: 0,
+            isCompilation: false,
+            mediaType: .audio,
+            volumeAdjustment: 0,
+            startTime: 0,
+            stopTime: 0,
+            soundCheck: 0,
             playCount: UInt32(itLibTrack.playCount),
             skipCount: 0,
             rating: 0,
