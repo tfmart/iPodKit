@@ -69,6 +69,10 @@ func debugITunesDB(filePath: String) {
             print("      String decoding failed")
         case .fieldSizeMismatch(let expected, let actual, let field):
             print("      Field size mismatch in \(field): expected \(expected), got \(actual)")
+        case .artworkNotFound:
+            print("      Artwork not found")
+        case .artworkDecodingFailed:
+            print("      Artwork decoding failed")
         }
     } catch {
         print("   ❌ Other error: \(error)")

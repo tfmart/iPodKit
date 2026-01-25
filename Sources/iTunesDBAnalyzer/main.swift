@@ -11,12 +11,10 @@ guard CommandLine.arguments.count > 1 else {
     print("  --debug      Debug mode for iTunesDB")
     print("  --detailed   Detailed debug for iTunesDB")
     print("  --structure  Structure analysis for iTunesDB")
-    print("  --artwork    Parse ArtworkDB file")
     print("  --ipod       Parse entire iPod directory")
     print("")
     print("Examples:")
     print("  analyze-itunes-db ~/Desktop/iTunesDB")
-    print("  analyze-itunes-db --artwork ~/Desktop/ArtworkDB")
     print("  analyze-itunes-db --ipod /Volumes/iPod")
     print("  analyze-itunes-db --debug ~/Desktop/iTunesDB")
     exit(1)
@@ -38,13 +36,18 @@ if CommandLine.arguments[1] == "--structure" && CommandLine.arguments.count > 2 
     exit(0)
 }
 
-if CommandLine.arguments[1] == "--artwork" && CommandLine.arguments.count > 2 {
-    analyzeArtworkDB(filePath: CommandLine.arguments[2])
+if CommandLine.arguments[1] == "--ipod" && CommandLine.arguments.count > 2 {
+    analyzeEntireiPod(iPodPath: CommandLine.arguments[2])
     exit(0)
 }
 
-if CommandLine.arguments[1] == "--ipod" && CommandLine.arguments.count > 2 {
-    analyzeEntireiPod(iPodPath: CommandLine.arguments[2])
+if CommandLine.arguments[1] == "--test-artwork" && CommandLine.arguments.count > 2 {
+    testArtworkLoading(iPodPath: CommandLine.arguments[2])
+    exit(0)
+}
+
+if CommandLine.arguments[1] == "--export-artwork" && CommandLine.arguments.count > 2 {
+    exportAllArtwork(iPodPath: CommandLine.arguments[2])
     exit(0)
 }
 

@@ -116,20 +116,15 @@ internal extension Playlist {
         )
     }
 
-    /// Create a Playlist from SQLite-based iTunes Library container
-    static func from(
-        id: UInt64,
-        name: String,
-        trackIds: [UInt64],
-        isMasterPlaylist: Bool = false
-    ) -> Playlist {
+    /// Create a Playlist from SQLite-based iTunes Library playlist
+    static func from(_ itLibPlaylist: ITLibPlaylist) -> Playlist {
         return Playlist(
-            id: id,
-            name: name,
-            isMasterPlaylist: isMasterPlaylist,
+            id: UInt64(bitPattern: itLibPlaylist.id),
+            name: itLibPlaylist.name,
+            isMasterPlaylist: itLibPlaylist.isMasterPlaylist,
             isPodcast: false,
-            trackCount: trackIds.count,
-            trackIds: trackIds,
+            trackCount: itLibPlaylist.trackPids.count,
+            trackIds: itLibPlaylist.trackPids.map { UInt64(bitPattern: $0) },
             timestamp: nil
         )
     }
