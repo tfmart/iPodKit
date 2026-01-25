@@ -89,7 +89,8 @@ public struct ITDBTrack: IPKParseable, Sendable {
     public let sampleRate: UInt32
     public let playCount: UInt32
     public let lastPlayed: UInt32
-    
+    public let dbid: UInt64
+
     // Parsed string metadata
     public let title: String?
     public let location: String?
@@ -121,7 +122,8 @@ public struct ITDBTrack: IPKParseable, Sendable {
         self.sampleRate = try Self.SampleRate().readUInt32(from: data)
         self.playCount = try Self.PlayCount().readUInt32(from: data)
         self.lastPlayed = try Self.LastPlayed().readUInt32(from: data)
-        
+        self.dbid = try Self.DBID().readUInt64(from: data)
+
         // Parse string metadata objects
         var stringMetadata: [ITDBDataObject.TypeIdentifier: String] = [:]
         var offset = Int(headerLength)
@@ -309,5 +311,10 @@ extension ITDBTrack {
     struct LastPlayed: IPKField {
         var offset: Int { 88 }
         var length: Int { 4 }
+    }
+
+    struct DBID: IPKField {
+        var offset: Int { 112 }
+        var length: Int { 8 }
     }
 }
