@@ -17,7 +17,7 @@ dependencies: [
 ```swift
 import iPodKit
 
-let ipod = try iPod(path: "/Volumes/iPod")
+let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
 
 for track in ipod.tracks {
     print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
@@ -26,47 +26,50 @@ for track in ipod.tracks {
 
 ## Features
 
-### Searching and Filtering
-
-```swift
-let beatles = ipod.search("Beatles")
-let rockTracks = ipod.tracks(inGenre: "Rock")
-let abbeyRoad = ipod.tracks(fromAlbum: "Abbey Road")
-```
-
-### Playback History
-
-```swift
-let recent = ipod.recentlyPlayed(limit: 25)
-let favorites = ipod.mostPlayed(limit: 10)
-let unplayed = ipod.neverPlayed()
-let bestSongs = ipod.topRated(minimumRating: 4)
-```
-
 ### Track Metadata
 
 ```swift
 let track = ipod.tracks.first!
 
-track.title
-track.artist
-track.album
-track.duration
-track.durationFormatted  // "3:45"
-
-track.playCount
-track.lastPlayed         // Date?
-track.skipCount
-track.rating             // 0-5 stars
+track.title           // String?
+track.artist          // String?
+track.album           // String?
+track.genre           // String?
+track.composer        // String?
+track.duration        // TimeInterval (seconds)
+track.fileSize        // UInt64 (bytes)
+track.bitrate         // UInt32 (kbps)
+track.trackNumber     // UInt32
+track.year            // UInt32
 ```
 
-### Library Statistics
+### Playback Data
 
 ```swift
-print("Tracks: \(ipod.trackCount)")
-print("Artists: \(ipod.artists.count)")
-print("Total duration: \(ipod.totalDurationFormatted)")
-print("Total size: \(ipod.totalSizeFormatted)")
+track.playCount       // UInt32
+track.skipCount       // UInt32
+track.rating          // Int (0-5 stars)
+track.lastPlayed      // Date?
+track.lastSkipped     // Date?
+track.dateAdded       // Date?
+track.bookmark        // TimeInterval? (resume position)
+```
+
+### Playlists
+
+```swift
+for playlist in ipod.playlists {
+    print("\(playlist.name) - \(playlist.trackCount) tracks")
+    print("Track IDs: \(playlist.trackIds)")
+}
+```
+
+### Album Artwork
+
+```swift
+if let artwork = track.artwork {
+    let image = try artwork.loadImage()
+}
 ```
 
 ## Supported Library Formats
@@ -77,19 +80,21 @@ print("Total size: \(ipod.totalSizeFormatted)")
 | iTunesSD | Binary format for iPod Shuffle |
 | iTunes Library (SQLite) | SQLite-based format |
 | ArtworkDB | Album artwork storage |
+| PlayCounts | Play history and statistics |
 
 ## Tested Devices
 
-**iPod Classic**
+**iPod**
 - 5th Generation (Video)
 
-**iPod Nano**
+**iPod nano**
 - 6th Generation
 
 ## Requirements
 
 - Swift 6.0+
-- macOS, iOS, tvOS, watchOS
+- macOS 10.15+
+- iOS 13+
 
 ## License
 

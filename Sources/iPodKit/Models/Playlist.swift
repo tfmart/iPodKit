@@ -15,7 +15,7 @@ import Foundation
 /// ## Usage
 ///
 /// ```swift
-/// let ipod = try iPod(path: "/Volumes/iPod")
+/// let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
 ///
 /// for playlist in ipod.playlists {
 ///     print("\(playlist.name) - \(playlist.trackCount) tracks")

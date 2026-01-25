@@ -16,10 +16,10 @@ import Foundation
 /// ## Usage
 ///
 /// ```swift
-/// let ipod = try iPod(path: "/Volumes/iPod")
+/// let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
 ///
 /// for track in ipod.tracks {
-///     print("\(track.title) by \(track.artist)")
+///     print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
 ///     print("Played \(track.playCount) times")
 ///     if let lastPlayed = track.lastPlayed {
 ///         print("Last played: \(lastPlayed)")
