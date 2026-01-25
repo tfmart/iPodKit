@@ -154,6 +154,15 @@ let unixTimestamp = TimeInterval(timestamp) - macEpochOffset
 return Date(timeIntervalSince1970: unixTimestamp)
 ```
 
+## Technical Documentation
+
+The `docs/itunesdb_docs/` directory contains reference documentation for the iPod database binary formats:
+
+- **wikiPodLinux documentation** - Comprehensive specification of iTunesDB binary format including track items, playlists, data objects, and field offsets
+- **iPod Linux RTXC manual** - Additional technical reference
+
+Refer to these documents when implementing new field parsing or debugging binary format issues.
+
 ## Testing
 
 Run tests with:
