@@ -70,11 +70,11 @@ private func cleanupMockiPodDirectory(_ url: URL) {
 
     #expect(firstTrack.id > 0, "Track should have valid ID")
     #expect(firstTrack.duration > 0, "Track should have duration")
-    #expect(!firstTrack.displayName.isEmpty, "Track should have display name")
+    #expect(firstTrack.title != nil, "Track should have title")
 
     print("✅ Track metadata test passed")
-    print("   - First track: \(firstTrack.displayName)")
-    print("   - Duration: \(firstTrack.durationFormatted)")
+    print("   - First track: \(firstTrack.title ?? "Unknown")")
+    print("   - Duration: \(firstTrack.duration)s")
     print("   - Artist: \(firstTrack.artist ?? "Unknown")")
 }
 
@@ -91,7 +91,7 @@ private func cleanupMockiPodDirectory(_ url: URL) {
     print("   - Tracks with play counts: \(playedTracks.count)")
 
     if let mostPlayed = playedTracks.max(by: { $0.playCount < $1.playCount }) {
-        print("   - Most played: \(mostPlayed.displayName) (\(mostPlayed.playCount) plays)")
+        print("   - Most played: \(mostPlayed.title ?? "Unknown") (\(mostPlayed.playCount) plays)")
     }
 }
 
