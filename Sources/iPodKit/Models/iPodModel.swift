@@ -72,30 +72,30 @@ public enum iPodModel: String, Codable, Sendable, CaseIterable {
     public var usbProductID: Int {
         switch self {
         // iPod Classic/Original
-        case .iPodClassicOriginal: return 0x1202      // 1st and 2nd generation
-        case .iPodClassicSecondGen: return 0x1202     // shares ID with 1st gen
-        case .iPodClassicThirdGen: return 0x1201      // 3rd generation (dock connector)
-        case .iPodClassicFourthGen: return 0x1203     // 4th generation (Click Wheel)
-        case .iPodClassicFifthGen: return 0x1209      // iPod with video (5th gen)
-        case .iPodClassicSixthGen: return 0x1261      // iPod classic (6th gen)
+        case .iPodClassicOriginal: return 0x1202
+        case .iPodClassicSecondGen: return 0x1202
+        case .iPodClassicThirdGen: return 0x1201
+        case .iPodClassicFourthGen: return 0x1203
+        case .iPodClassicFifthGen: return 0x1209
+        case .iPodClassicSixthGen: return 0x1261
 
         // iPod Mini
-        case .iPodMini: return 0x1205                 // iPod mini (1st and 2nd gen)
+        case .iPodMini: return 0x1205
 
         // iPod Nano
-        case .iPodNanoFirstGen: return 0x120A         // iPod nano (1st gen)
-        case .iPodNanoSecondGen: return 0x1260        // iPod nano (2nd gen)
-        case .iPodNanoThirdGen: return 0x1262         // iPod nano (3rd gen)
-        case .iPodNanoFourthGen: return 0x1263        // iPod nano (4th gen)
-        case .iPodNanoFifthGen: return 0x1265         // iPod nano (5th gen)
-        case .iPodNanoSixthGen: return 0x1266         // iPod nano (6th gen)
-        case .iPodNanoSeventhGen: return 0x1267       // iPod nano (7th gen)
+        case .iPodNanoFirstGen: return 0x120A
+        case .iPodNanoSecondGen: return 0x1260
+        case .iPodNanoThirdGen: return 0x1262
+        case .iPodNanoFourthGen: return 0x1263
+        case .iPodNanoFifthGen: return 0x1265
+        case .iPodNanoSixthGen: return 0x1266
+        case .iPodNanoSeventhGen: return 0x1267
 
         // iPod Shuffle
-        case .iPodShuffleFirstGen: return 0x1300      // iPod Shuffle 1st gen
-        case .iPodShuffleSecondGen: return 0x1301     // iPod Shuffle 2nd gen
-        case .iPodShuffleThirdGen: return 0x1302      // iPod Shuffle 3rd gen
-        case .iPodShuffleFourthGen: return 0x1303     // iPod Shuffle 4th gen
+        case .iPodShuffleFirstGen: return 0x1300
+        case .iPodShuffleSecondGen: return 0x1301
+        case .iPodShuffleThirdGen: return 0x1302
+        case .iPodShuffleFourthGen: return 0x1303
         }
     }
 
