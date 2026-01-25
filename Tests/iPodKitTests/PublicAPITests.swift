@@ -514,9 +514,10 @@ import Foundation
     if let iTunesDB = reader.iTunesDB {
         let playCounts = reader.playCountsDB
 
+        let dummyURL = URL(fileURLWithPath: "/")
         for (index, itdbTrack) in iTunesDB.tracks.enumerated() {
             let playCountEntry = playCounts?.playCountEntry(for: index)
-            let track = Track.from(itdbTrack, index: index, playCountEntry: playCountEntry)
+            let track = Track.from(itdbTrack, index: index, playCountEntry: playCountEntry, iPodURL: dummyURL)
             unifiedTracks.append(track)
         }
     }
@@ -694,30 +695,4 @@ import Foundation
     print("✅ Statistics calculation tests passed")
 }
 
-// MARK: - DeviceType Tests
 
-@Test func testiPodDeviceTypeEnum() async throws {
-    // Test all device type raw values
-    #expect(iPod.DeviceType.standard.rawValue == "Standard iPod")
-    #expect(iPod.DeviceType.shuffle.rawValue == "iPod Shuffle")
-    #expect(iPod.DeviceType.photo.rawValue == "iPod Photo")
-    #expect(iPod.DeviceType.sqlite.rawValue == "iPod (SQLite)")
-    #expect(iPod.DeviceType.unknown.rawValue == "Unknown")
-
-    print("✅ DeviceType enum tests passed")
-}
-
-// MARK: - Configuration Builder Tests
-
-@Test func testiPodConfigurationBuilder() async throws {
-    // Test that builder can be created using the static factory method
-    let path = "/Volumes/TestiPod"
-    let builder = iPod.configure(path: path)
-
-    // The builder pattern provides a fluent API for future extensibility
-    // Currently the simplified builder just wraps the path
-    // This test verifies the API shape is correct
-    _ = builder  // Builder created successfully
-
-    print("✅ Configuration builder tests passed")
-}

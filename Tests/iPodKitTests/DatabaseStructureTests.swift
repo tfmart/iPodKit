@@ -109,32 +109,20 @@ import Foundation
     let artworkDB = try ArtworkDatabase(from: data)
 
     // Validate artwork database structure
-    // Note: Test ArtworkDB file may be empty/minimal, so version can be 0
-    #expect(artworkDB.versionNumber >= 0, "ArtworkDB should have valid version")
-    #expect(artworkDB.albums.count >= 0, "Should have valid album count")
-    #expect(artworkDB.images.count >= 0, "Should have valid image count")
-    #expect(artworkDB.headerLength >= 0, "ArtworkDB should have valid header length")
-    #expect(artworkDB.totalLength >= 0, "ArtworkDB should have valid total length")
-    
-    // Test album structure if any albums exist
-    if !artworkDB.albums.isEmpty {
-        let firstAlbum = artworkDB.albums[0]
-        #expect(firstAlbum.headerLength > 0, "Album should have valid header")
-        #expect(firstAlbum.totalLength > 0, "Album should have valid total length")
-        #expect(firstAlbum.artworkId >= 0, "Album artwork ID should not be negative")
+    #expect(artworkDB.headerLength > 0, "ArtworkDB should have valid header length")
+    #expect(artworkDB.totalLength > 0, "ArtworkDB should have valid total length")
+    #expect(artworkDB.numberOfChildren >= 0, "ArtworkDB should have valid children count")
+    #expect(artworkDB.imageItems.count >= 0, "Should have valid image items count")
+
+    // Test image item structure if any images exist
+    if !artworkDB.imageItems.isEmpty {
+        let firstImage = artworkDB.imageItems[0]
+        #expect(firstImage.headerLength > 0, "Image item should have valid header")
+        #expect(firstImage.totalLength > 0, "Image item should have valid total length")
     }
-    
-    // Test image structure if any images exist
-    if !artworkDB.images.isEmpty {
-        let firstImage = artworkDB.images[0]
-        #expect(firstImage.headerLength > 0, "Image should have valid header")
-        #expect(firstImage.totalLength > 0, "Image should have valid total length")
-        #expect(firstImage.imageSize >= 0, "Image size should not be negative")
-    }
-    
+
     print("✅ ArtworkDB structure validation passed")
-    print("   - Albums: \(artworkDB.albums.count)")
-    print("   - Images: \(artworkDB.images.count)")
+    print("   - Image items: \(artworkDB.imageItems.count)")
 }
 
 // MARK: - Data Consistency Tests

@@ -127,20 +127,17 @@ import Foundation
         return
     }
     let resourcePath = resourceURL.path
-    
+
     // Parse the actual artwork database file
     let data = try Data(contentsOf: URL(fileURLWithPath: resourcePath))
     let artworkDB = try ArtworkDatabase(from: data)
-    
+
     // Verify basic artwork database structure
-    #expect(artworkDB.albums.count >= 0, "Should have valid album count")
-    #expect(artworkDB.images.count >= 0, "Should have valid image count")
-    
-    // Test convenience properties
-    #expect(!artworkDB.formattedTotalSize.isEmpty, "Should format total size")
-    
-    print("✅ Parsed ArtworkDB with \(artworkDB.albums.count) albums and \(artworkDB.images.count) images")
-    print("✅ Total size: \(artworkDB.formattedTotalSize)")
+    #expect(artworkDB.imageItems.count >= 0, "Should have valid image count")
+    #expect(artworkDB.headerLength > 0, "Should have valid header length")
+    #expect(artworkDB.totalLength > 0, "Should have valid total length")
+
+    print("✅ Parsed ArtworkDB with \(artworkDB.imageItems.count) images")
 }
 
 @Test func testParseActualPlayCounts() async throws {
