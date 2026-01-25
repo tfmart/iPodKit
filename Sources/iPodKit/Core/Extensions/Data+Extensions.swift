@@ -36,7 +36,12 @@ extension Data {
                (UInt32(self[offset + 2]) << 16) |
                (UInt32(self[offset + 3]) << 24)
     }
-    
+
+    func readInt32(at offset: Int) throws -> Int32 {
+        let unsigned = try readUInt32(at: offset)
+        return Int32(bitPattern: unsigned)
+    }
+
     func readUInt64(at offset: Int) throws -> UInt64 {
         guard offset >= 0 && offset + 7 < count else {
             throw IPKError.invalidOffset(offset)

@@ -33,7 +33,14 @@ extension IPKField {
         }
         return try data.readUInt32(at: offset)
     }
-    
+
+    func readInt32(from data: Data) throws -> Int32 {
+        guard length == 4 else {
+            throw IPKError.fieldSizeMismatch(expected: 4, actual: length, field: "\(type(of: self))")
+        }
+        return try data.readInt32(at: offset)
+    }
+
     func readUInt64(from data: Data) throws -> UInt64 {
         guard length == 8 else {
             throw IPKError.fieldSizeMismatch(expected: 8, actual: length, field: "\(type(of: self))")
