@@ -30,11 +30,6 @@ do {
     if let deviceName = ipod.deviceName {
         print("Device: \(deviceName)")
     }
-    if let tz = ipod.deviceTimeZone {
-        let hours = tz.secondsFromGMT() / 3600
-        let sign = hours >= 0 ? "+" : ""
-        print("Timezone: UTC\(sign)\(hours)")
-    }
     print("Tracks: \(ipod.tracks.count)")
     print("Playlists: \(ipod.playlists.count)")
     print("")

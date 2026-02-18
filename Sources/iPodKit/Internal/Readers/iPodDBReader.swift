@@ -73,47 +73,35 @@ internal class iPodDBReader {
     // MARK: - Properties
 
     // Main database files
-    public private(set) var iTunesDB: iTunesDBReader?
-    public private(set) var playCountsDB: PlayCounts?
-    public private(set) var otgPlaylist: OTGPlaylist?
-    public private(set) var equalizerPresets: EqualizerPresets?
-    public private(set) var artworkDB: ArtworkDatabase?
-    public private(set) var photoDB: PhotoDatabase?
+    private(set) var iTunesDB: iTunesDBReader?
+    private(set) var playCountsDB: PlayCounts?
+    private(set) var otgPlaylist: OTGPlaylist?
+    private(set) var equalizerPresets: EqualizerPresets?
+    private(set) var artworkDB: ArtworkDatabase?
+    private(set) var photoDB: PhotoDatabase?
 
     // iPod Shuffle specific files
-    public private(set) var shuffleDB: iTunesSD?
-    public private(set) var shuffleStats: iTunesStats?
-    public private(set) var shuffleOrder: iTunesShuffle?
-    public private(set) var playbackState: iTunesPState?
+    private(set) var shuffleDB: iTunesSD?
+    private(set) var shuffleStats: iTunesStats?
+    private(set) var shuffleOrder: iTunesShuffle?
+    private(set) var playbackState: iTunesPState?
 
     // SQLite-based iTunes Library (newer iPods)
-    public private(set) var iTunesLibrary: iTunesLibraryReader?
+    private(set) var iTunesLibrary: iTunesLibraryReader?
 
-    // Device preferences (timezone, etc.)
-    public private(set) var preferences: iPodPreferences?
-
-    // Device settings from iPodSettings.xml (timezone fallback, etc.)
-    public private(set) var settings: iPodSettings?
-
-    public private(set) var basePath: String
-    public private(set) var deviceType: iPodDeviceType
+    private(set) var basePath: String
+    private(set) var deviceType: iPodDeviceType
 
     /// Device name extracted from database files (e.g., "John's iPod")
     /// For SQLite-based iTunes Library, extracted from primary container.
     /// For binary iTunesDB, extracted from master playlist name.
-    public var deviceName: String? {
+    var deviceName: String? {
         return iTunesLibrary?.deviceName ?? iTunesDB?.deviceName
     }
 
-    /// Timezone the iPod was configured with.
-    /// Prefers the binary Preferences file; falls back to iPodSettings.xml.
-    public var deviceTimeZone: TimeZone? {
-        return preferences?.deviceTimeZone ?? settings?.deviceTimeZone
-    }
-    
     // MARK: - Device Type Detection
 
-    public enum iPodDeviceType {
+    enum iPodDeviceType {
         case standard       // Regular iPod with iTunesDB
         case shuffle        // iPod Shuffle with iTunesSD
         case photo          // iPod Photo with artwork support
@@ -141,7 +129,7 @@ internal class iPodDBReader {
     /// Initialize with iPod root directory path
     /// - Parameter iPodPath: Path to iPod root directory
     /// - Throws: Parsing or file reading errors
-    public init(iPodPath: String) throws {
+    init(iPodPath: String) throws {
         self.basePath = iPodPath
         self.deviceType = .unknown
         
@@ -154,7 +142,7 @@ internal class iPodDBReader {
     ///   - filePath: Path to specific database file
     ///   - fileType: Type of database file
     /// - Throws: Parsing or file reading errors
-    public convenience init(filePath: String, fileType: DatabaseFileType) throws {
+    convenience init(filePath: String, fileType: DatabaseFileType) throws {
         let directoryPath = URL(fileURLWithPath: filePath).deletingLastPathComponent().path
         try self.init(iPodPath: directoryPath)
         
@@ -164,7 +152,7 @@ internal class iPodDBReader {
     
     // MARK: - Database File Types
     
-    public enum DatabaseFileType: String, CaseIterable {
+    enum DatabaseFileType: String, CaseIterable {
         case iTunesDB = "iTunesDB"
         case playCounts = "Play Counts"
         case otgPlaylist = "OTG Playlist File"
@@ -268,8 +256,6 @@ internal class iPodDBReader {
             artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
         }
 
-        loadPreferences()
-        loadSettings()
     }
 
     private func loadStandardFiles() throws {
@@ -295,8 +281,6 @@ internal class iPodDBReader {
             artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
         }
 
-        loadPreferences()
-        loadSettings()
     }
     
     private func loadShuffleFiles() throws {
@@ -339,22 +323,6 @@ internal class iPodDBReader {
                 try loadSpecificFile(at: path, type: fileType)
             }
         }
-    }
-
-    private func loadPreferences() {
-        let prefsPath = URL(fileURLWithPath: basePath)
-            .appendingPathComponent("iPod_Control/Device/Preferences").path
-        guard FileManager.default.fileExists(atPath: prefsPath),
-              let data = try? Data(contentsOf: URL(fileURLWithPath: prefsPath)) else { return }
-        preferences = iPodPreferences(from: data)
-    }
-
-    private func loadSettings() {
-        let settingsPath = URL(fileURLWithPath: basePath)
-            .appendingPathComponent("iPod_Control/Device/iPodSettings.xml").path
-        guard FileManager.default.fileExists(atPath: settingsPath),
-              let data = try? Data(contentsOf: URL(fileURLWithPath: settingsPath)) else { return }
-        settings = iPodSettings(from: data)
     }
 
     private func loadOptionalFile(_ type: DatabaseFileType, loader: (String) throws -> Void) {
