@@ -89,6 +89,12 @@ internal class iPodDBReader {
     // SQLite-based iTunes Library (newer iPods)
     public private(set) var iTunesLibrary: iTunesLibraryReader?
 
+    // Device preferences (timezone, etc.)
+    public private(set) var preferences: iPodPreferences?
+
+    // Device settings from iPodSettings.xml (timezone fallback, etc.)
+    public private(set) var settings: iPodSettings?
+
     public private(set) var basePath: String
     public private(set) var deviceType: iPodDeviceType
 
@@ -97,6 +103,12 @@ internal class iPodDBReader {
     /// For binary iTunesDB, extracted from master playlist name.
     public var deviceName: String? {
         return iTunesLibrary?.deviceName ?? iTunesDB?.deviceName
+    }
+
+    /// Timezone the iPod was configured with.
+    /// Prefers the binary Preferences file; falls back to iPodSettings.xml.
+    public var deviceTimeZone: TimeZone? {
+        return preferences?.deviceTimeZone ?? settings?.deviceTimeZone
     }
     
     // MARK: - Device Type Detection
@@ -255,8 +267,11 @@ internal class iPodDBReader {
         loadOptionalFile(.artworkDB) { path in
             artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
         }
+
+        loadPreferences()
+        loadSettings()
     }
-    
+
     private func loadStandardFiles() throws {
         // Load main iTunesDB
         if let path = findFilePath(for: .iTunesDB) {
@@ -279,6 +294,9 @@ internal class iPodDBReader {
         loadOptionalFile(.artworkDB) { path in
             artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
         }
+
+        loadPreferences()
+        loadSettings()
     }
     
     private func loadShuffleFiles() throws {
@@ -322,7 +340,23 @@ internal class iPodDBReader {
             }
         }
     }
-    
+
+    private func loadPreferences() {
+        let prefsPath = URL(fileURLWithPath: basePath)
+            .appendingPathComponent("iPod_Control/Device/Preferences").path
+        guard FileManager.default.fileExists(atPath: prefsPath),
+              let data = try? Data(contentsOf: URL(fileURLWithPath: prefsPath)) else { return }
+        preferences = iPodPreferences(from: data)
+    }
+
+    private func loadSettings() {
+        let settingsPath = URL(fileURLWithPath: basePath)
+            .appendingPathComponent("iPod_Control/Device/iPodSettings.xml").path
+        guard FileManager.default.fileExists(atPath: settingsPath),
+              let data = try? Data(contentsOf: URL(fileURLWithPath: settingsPath)) else { return }
+        settings = iPodSettings(from: data)
+    }
+
     private func loadOptionalFile(_ type: DatabaseFileType, loader: (String) throws -> Void) {
         guard let path = findFilePath(for: type) else { return }
         

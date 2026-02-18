@@ -27,6 +27,10 @@ public final class iPod: Sendable {
     /// Device name as configured in iTunes
     public let deviceName: String?
 
+    /// Timezone the iPod was configured with, parsed from the Preferences file
+    /// or iPodSettings.xml. `nil` when neither source contains a timezone.
+    public let deviceTimeZone: TimeZone?
+
     /// All tracks on the iPod
     public let tracks: [Track]
 
@@ -43,6 +47,7 @@ public final class iPod: Sendable {
         self.url = url
         let reader = try iPodDBReader(iPodPath: url.path)
         self.deviceName = reader.deviceName
+        self.deviceTimeZone = reader.deviceTimeZone
         var artworkIndex: [UInt64: ArtworkImageItem] = [:]
         if let artworkDB = reader.artworkDB {
             for item in artworkDB.imageItems where !item.thumbnails.isEmpty {
