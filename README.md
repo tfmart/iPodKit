@@ -112,6 +112,7 @@ ipod.deviceTimeZone   // TimeZone? — last synced timezone
 
 **iPod nano**
 - 6th Generation
+- 7th Generation
 
 ## Requirements
 
