@@ -58,7 +58,7 @@ import Foundation
     
     let field = TestField()
     
-    #expect(throws: IPKError.self) {
+    #expect(throws: IPKParsingError.self) {
         try field.readUInt32(from: data)
     }
 }
@@ -76,7 +76,7 @@ import Foundation
     try TestObject.validateMagicNumber(from: validData, expectedId: "mhbd")
 
     // This should throw
-    #expect(throws: IPKError.self) {
+    #expect(throws: IPKParsingError.self) {
         try TestObject.validateMagicNumber(from: invalidData, expectedId: "mhbd")
     }
 }

@@ -10,7 +10,7 @@ import Foundation
 /// Playlist List object in iTunes database
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Playlist_List
-struct ITDBPlaylistList: IPKParseable, Sendable {
+internal struct ITDBPlaylistList: IPKParseable, Sendable {
     init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhlp")
         _ = try Self.HeaderLength().readUInt32(from: data)

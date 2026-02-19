@@ -52,117 +52,117 @@ public struct Track: Sendable, Identifiable, Hashable {
 
     // MARK: - Identification
 
-    /// Unique identifier for this track
+    /// Unique identifier for this track.
     public let id: UInt64
 
-    /// Internal index used for cross-referencing with play counts
+    /// Internal index used for cross-referencing with play counts.
     internal let index: Int
 
     // MARK: - Metadata
 
-    /// Track title
+    /// Track title.
     public let title: String?
 
-    /// Artist name
+    /// Artist name.
     public let artist: String?
 
-    /// Album name
+    /// Album name.
     public let album: String?
 
-    /// Genre
+    /// Genre.
     public let genre: String?
 
-    /// Composer
+    /// Composer.
     public let composer: String?
 
-    /// Comment or description
+    /// Comment or description.
     public let comment: String?
 
-    /// Track grouping
+    /// Track grouping.
     public let grouping: String?
 
-    /// File path on the iPod
+    /// File path on the iPod.
     public let location: String?
 
     // MARK: - Audio Properties
 
-    /// Track duration in seconds
+    /// Track duration in seconds.
     public let duration: TimeInterval
 
-    /// File size in bytes
-    public let fileSize: UInt64
+    /// File size in bytes.
+    public let fileSize: Int
 
-    /// Audio bitrate in kbps
-    public let bitrate: UInt32
+    /// Audio bitrate in kbps, or `nil` if not available.
+    public let bitrate: Int?
 
-    /// Sample rate in Hz
-    public let sampleRate: UInt32
+    /// Sample rate in Hz, or `nil` if not available.
+    public let sampleRate: Int?
 
-    /// Track number on the album
-    public let trackNumber: UInt32
+    /// Track number on the album, or `nil` if not set.
+    public let trackNumber: Int?
 
-    /// Total tracks on the album
-    public let totalTracks: UInt32
+    /// Total tracks on the album, or `nil` if not set.
+    public let totalTracks: Int?
 
-    /// Release year
-    public let year: UInt32
+    /// Release year, or `nil` if not set.
+    public let year: Int?
 
-    /// Disc number in a multi-disc set
-    public let discNumber: UInt32
+    /// Disc number in a multi-disc set, or `nil` if not set.
+    public let discNumber: Int?
 
-    /// Total number of discs in the set
-    public let totalDiscs: UInt32
+    /// Total number of discs in the set, or `nil` if not set.
+    public let totalDiscs: Int?
 
-    /// Beats per minute
-    public let bpm: UInt16
+    /// Beats per minute, or `nil` if not set.
+    public let bpm: Int?
 
-    /// Whether this track is part of a compilation album
+    /// Whether this track is part of a compilation album.
     public let isCompilation: Bool
 
-    /// The type of media (audio, video, podcast, etc.)
+    /// The type of media (audio, video, podcast, etc.).
     public let mediaType: MediaType
 
-    /// Volume adjustment (-255 to +255, representing -100% to +100%)
-    public let volumeAdjustment: Int32
+    /// Volume adjustment (-255 to +255, representing -100% to +100%).
+    public let volumeAdjustment: Int
 
-    /// Start time in milliseconds (custom playback start point)
-    public let startTime: UInt32
+    /// Custom playback start point in seconds, or `nil` if not set.
+    public let startTime: TimeInterval?
 
-    /// Stop time in milliseconds (custom playback end point, 0 means play to end)
-    public let stopTime: UInt32
+    /// Custom playback end point in seconds, or `nil` if not set.
+    public let stopTime: TimeInterval?
 
-    /// SoundCheck value for volume normalization
-    public let soundCheck: UInt32
+    /// SoundCheck value for volume normalization, or `nil` if not set.
+    public let soundCheck: Int?
 
     // MARK: - User Data
 
-    /// Number of times the track has been played
-    public let playCount: UInt32
+    /// Number of times the track has been played.
+    public let playCount: Int
 
-    /// Number of times the track has been skipped
-    public let skipCount: UInt32
+    /// Number of times the track has been skipped.
+    public let skipCount: Int
 
-    /// Star rating (0-5)
+    /// Star rating (0-5).
     public let rating: Int
 
-    /// Date the track was last played
+    /// Date the track was last played.
     public let lastPlayed: Date?
 
-    /// Date the track was last skipped
+    /// Date the track was last skipped.
     public let lastSkipped: Date?
 
-    /// Bookmark position in seconds (for resumable playback)
+    /// Bookmark position in seconds (for resumable playback).
     public let bookmark: TimeInterval?
 
-    /// Date the track was added to the library
+    /// Date the track was added to the library.
     public let dateAdded: Date?
 
-    /// Date the track was last modified
+    /// Date the track was last modified.
     public let dateModified: Date?
 
     // MARK: - Artwork
 
-    /// Artwork for this track (if available)
+    /// Artwork for this track, if available.
     public let artwork: Artwork?
 
     // MARK: - Internal Initializer
@@ -179,23 +179,23 @@ public struct Track: Sendable, Identifiable, Hashable {
         grouping: String?,
         location: String?,
         duration: TimeInterval,
-        fileSize: UInt64,
-        bitrate: UInt32,
-        sampleRate: UInt32,
-        trackNumber: UInt32,
-        totalTracks: UInt32,
-        year: UInt32,
-        discNumber: UInt32 = 0,
-        totalDiscs: UInt32 = 0,
-        bpm: UInt16 = 0,
+        fileSize: Int,
+        bitrate: Int?,
+        sampleRate: Int?,
+        trackNumber: Int?,
+        totalTracks: Int?,
+        year: Int?,
+        discNumber: Int? = nil,
+        totalDiscs: Int? = nil,
+        bpm: Int? = nil,
         isCompilation: Bool = false,
         mediaType: MediaType = .audio,
-        volumeAdjustment: Int32 = 0,
-        startTime: UInt32 = 0,
-        stopTime: UInt32 = 0,
-        soundCheck: UInt32 = 0,
-        playCount: UInt32,
-        skipCount: UInt32,
+        volumeAdjustment: Int = 0,
+        startTime: TimeInterval? = nil,
+        stopTime: TimeInterval? = nil,
+        soundCheck: Int? = nil,
+        playCount: Int,
+        skipCount: Int,
         rating: Int,
         lastPlayed: Date?,
         lastSkipped: Date?,
@@ -242,18 +242,32 @@ public struct Track: Sendable, Identifiable, Hashable {
     }
 }
 
-// MARK: - Internal Factory Methods
+// MARK: - Internal Initializers
 
 internal extension Track {
 
-    /// Create a Track from ITDBTrack and optional PlayCountEntry
-    static func from(
+    /// Zero-to-nil helper for numeric fields where 0 means "not available".
+    private static func nonZero(_ value: UInt32) -> Int? {
+        value == 0 ? nil : Int(value)
+    }
+
+    private static func nonZero(_ value: UInt16) -> Int? {
+        value == 0 ? nil : Int(value)
+    }
+
+    /// Milliseconds to optional TimeInterval (nil if zero).
+    private static func msToSeconds(_ ms: UInt32) -> TimeInterval? {
+        ms == 0 ? nil : TimeInterval(ms) / 1000.0
+    }
+
+    /// Create a Track from an ITDBTrack and optional PlayCountEntry.
+    init(
         _ itdbTrack: ITDBTrack,
         index: Int,
         playCountEntry: PlayCountEntry? = nil,
         artwork: ArtworkImageItem? = nil,
         iPodURL: URL
-    ) -> Track {
+    ) {
         // Merge play data - prefer PlayCounts file as it has more recent data
         let playCount = playCountEntry?.playCount ?? itdbTrack.playCount
         let skipCount = playCountEntry?.skipCount ?? 0
@@ -262,7 +276,7 @@ internal extension Track {
         let rating = playCountEntry.map { Int($0.rating) / 20 } ?? itdbTrack.starRating
         let bookmark = playCountEntry.map { TimeInterval($0.bookmarkTime) / 1000.0 }
 
-        return Track(
+        self.init(
             id: itdbTrack.dbid,
             index: index,
             title: itdbTrack.title,
@@ -274,23 +288,23 @@ internal extension Track {
             grouping: itdbTrack.grouping,
             location: itdbTrack.location,
             duration: itdbTrack.durationInSeconds,
-            fileSize: UInt64(itdbTrack.size),
-            bitrate: itdbTrack.bitrate,
-            sampleRate: itdbTrack.sampleRate,
-            trackNumber: itdbTrack.trackNumber,
-            totalTracks: itdbTrack.totalTracks,
-            year: itdbTrack.year,
-            discNumber: itdbTrack.discNumber,
-            totalDiscs: itdbTrack.totalDiscs,
-            bpm: itdbTrack.bpm,
+            fileSize: Int(itdbTrack.size),
+            bitrate: Self.nonZero(itdbTrack.bitrate),
+            sampleRate: Self.nonZero(itdbTrack.sampleRate),
+            trackNumber: Self.nonZero(itdbTrack.trackNumber),
+            totalTracks: Self.nonZero(itdbTrack.totalTracks),
+            year: Self.nonZero(itdbTrack.year),
+            discNumber: Self.nonZero(itdbTrack.discNumber),
+            totalDiscs: Self.nonZero(itdbTrack.totalDiscs),
+            bpm: Self.nonZero(itdbTrack.bpm),
             isCompilation: itdbTrack.isCompilation,
             mediaType: MediaType(rawValue: itdbTrack.mediaType),
-            volumeAdjustment: itdbTrack.volumeAdjustment,
-            startTime: itdbTrack.startTime,
-            stopTime: itdbTrack.stopTime,
-            soundCheck: itdbTrack.soundCheck,
-            playCount: playCount,
-            skipCount: skipCount,
+            volumeAdjustment: Int(itdbTrack.volumeAdjustment),
+            startTime: Self.msToSeconds(itdbTrack.startTime),
+            stopTime: Self.msToSeconds(itdbTrack.stopTime),
+            soundCheck: Self.nonZero(itdbTrack.soundCheck),
+            playCount: Int(playCount),
+            skipCount: Int(skipCount),
             rating: rating,
             lastPlayed: lastPlayed,
             lastSkipped: lastSkipped,
@@ -301,12 +315,12 @@ internal extension Track {
         )
     }
 
-    /// Create a Track from iTunesSD track and optional iTunesStatEntry
-    static func from(
+    /// Create a Track from an iTunesSD track and optional iTunesStatEntry.
+    init(
         shuffleTrack: iTunesSDTrack,
         index: Int,
         statEntry: iTunesStatEntry? = nil
-    ) -> Track {
+    ) {
         let playCount = statEntry?.playCount ?? 0
         let skipCount = statEntry?.skipCount ?? 0
         let lastPlayed = statEntry?.lastPlayedDate
@@ -314,8 +328,7 @@ internal extension Track {
         let rating = statEntry.map { $0.starRating } ?? 0
         let bookmark = statEntry.map { $0.bookmarkTimeInSeconds }
 
-        // iPod Shuffle doesn't support artwork or extended metadata
-        return Track(
+        self.init(
             id: UInt64(index),
             index: index,
             title: shuffleTrack.displayName,
@@ -328,35 +341,25 @@ internal extension Track {
             location: shuffleTrack.filename,
             duration: shuffleTrack.durationInSeconds,
             fileSize: 0,
-            bitrate: 0,
-            sampleRate: 0,
-            trackNumber: 0,
-            totalTracks: 0,
-            year: 0,
-            discNumber: 0,
-            totalDiscs: 0,
-            bpm: 0,
-            isCompilation: false,
-            mediaType: .audio,
-            volumeAdjustment: 0,
-            startTime: 0,
-            stopTime: 0,
-            soundCheck: 0,
-            playCount: playCount,
-            skipCount: skipCount,
+            bitrate: nil,
+            sampleRate: nil,
+            trackNumber: nil,
+            totalTracks: nil,
+            year: nil,
+            playCount: Int(playCount),
+            skipCount: Int(skipCount),
             rating: rating,
             lastPlayed: lastPlayed,
             lastSkipped: lastSkipped,
             bookmark: bookmark,
             dateAdded: nil,
-            dateModified: nil,
-            artwork: nil
+            dateModified: nil
         )
     }
 
-    /// Create a Track from SQLite-based iTunes Library track (newer iPods)
-    static func from(_ itLibTrack: ITLibTrack, index: Int, artwork: ArtworkImageItem? = nil, iPodURL: URL) -> Track {
-        return Track(
+    /// Create a Track from a SQLite-based iTunes Library track (newer iPods).
+    init(_ itLibTrack: ITLibTrack, index: Int, artwork: ArtworkImageItem? = nil, iPodURL: URL) {
+        self.init(
             id: UInt64(bitPattern: itLibTrack.pid),
             index: index,
             title: itLibTrack.title.isEmpty ? nil : itLibTrack.title,
@@ -369,21 +372,12 @@ internal extension Track {
             location: nil,
             duration: itLibTrack.durationInSeconds,
             fileSize: 0,
-            bitrate: 0,
-            sampleRate: 0,
-            trackNumber: 0,
-            totalTracks: 0,
-            year: 0,
-            discNumber: 0,
-            totalDiscs: 0,
-            bpm: 0,
-            isCompilation: false,
-            mediaType: .audio,
-            volumeAdjustment: 0,
-            startTime: 0,
-            stopTime: 0,
-            soundCheck: 0,
-            playCount: UInt32(itLibTrack.playCount),
+            bitrate: nil,
+            sampleRate: nil,
+            trackNumber: nil,
+            totalTracks: nil,
+            year: nil,
+            playCount: itLibTrack.playCount,
             skipCount: 0,
             rating: 0,
             lastPlayed: itLibTrack.lastPlayedDate,

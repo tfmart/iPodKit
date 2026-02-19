@@ -49,7 +49,6 @@ private func cleanupMockiPodDirectory(_ url: URL) {
     let ipod = try iPod(url: mockiPodURL)
 
     #expect(ipod.url == mockiPodURL, "iPod URL should match input URL")
-    #expect(ipod.path == mockiPodURL.path, "iPod path should match URL path")
     #expect(!ipod.tracks.isEmpty, "iPod should have tracks")
 
     print("✅ iPod init(url:) test passed")

@@ -13,7 +13,7 @@ import Foundation
 /// Note: iPods don't actually use this file yet according to documentation.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Equalizer_Presets_File
-struct EqualizerPresets: IPKParseable, Sendable {
+internal struct EqualizerPresets: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let entryLength: UInt32
@@ -49,7 +49,7 @@ struct EqualizerPresets: IPKParseable, Sendable {
 }
 
 // MARK: - Equalizer Preset Entry
-struct EqualizerPreset: IPKParseable, Sendable {
+internal struct EqualizerPreset: IPKParseable, Sendable {
     // Binary fields - 10 frequency bands typical for iTunes EQ
     public let band32Hz: Int16
     public let band64Hz: Int16
@@ -69,7 +69,7 @@ struct EqualizerPreset: IPKParseable, Sendable {
     public init(from data: Data) throws {
         // Note: EQ preset entries may not have magic numbers in some versions
         guard data.count >= 22 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         // Read 10 frequency bands (2 bytes each) + preamp

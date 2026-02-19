@@ -7,19 +7,19 @@
 
 import Foundation
 
-protocol IPKParseable {
+internal protocol IPKParseable {
     init(from data: Data) throws
 }
 
 extension IPKParseable {
     static func validateMagicNumber(from data: Data, expectedId: String) throws {
         guard data.count >= 4 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
 
         let magicNumber = try data.readString(at: 0, length: 4)
         guard magicNumber == expectedId else {
-            throw IPKError.invalidMagicNumber(expected: expectedId, found: magicNumber)
+            throw IPKParsingError.invalidMagicNumber(expected: expectedId, found: magicNumber)
         }
     }
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct PhotoImageList: IPKParseable, Sendable {
+internal struct PhotoImageList: IPKParseable, Sendable {
     let headerLength: UInt32
     let totalLength: UInt32
     let numberOfImages: UInt32

@@ -13,7 +13,7 @@ import Foundation
 /// a consistent shuffle sequence across power cycles and syncs.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesShuffle
-struct iTunesShuffle: IPKParseable, Sendable {
+internal struct iTunesShuffle: IPKParseable, Sendable {
     // Binary fields
     public let numberOfTracks: UInt32
     
@@ -22,7 +22,7 @@ struct iTunesShuffle: IPKParseable, Sendable {
     
     public init(from data: Data) throws {
         guard data.count >= 4 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         // Parse number of tracks (little-endian)

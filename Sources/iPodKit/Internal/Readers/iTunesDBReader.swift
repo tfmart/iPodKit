@@ -16,8 +16,8 @@ final class iTunesDBReader: Sendable {
 
     // MARK: - Properties
 
-    public let database: iTunesDB
-    public let tracks: [ITDBTrack]
+    let database: iTunesDB
+    let tracks: [ITDBTrack]
     private let _playlists: [ITDBPlaylist]
 
     /// Internal accessor for playlists
@@ -28,7 +28,7 @@ final class iTunesDBReader: Sendable {
     /// Initialize from a file path
     /// - Parameter filePath: Path to the iTunesDB file
     /// - Throws: Parsing or file reading errors
-    public convenience init(filePath: String) throws {
+    convenience init(filePath: String) throws {
         let url = URL(fileURLWithPath: filePath)
         let data = try Data(contentsOf: url)
         try self.init(data: data)
@@ -37,7 +37,7 @@ final class iTunesDBReader: Sendable {
     /// Initialize from raw data
     /// - Parameter data: Raw iTunesDB file data
     /// - Throws: Parsing errors
-    public init(data: Data) throws {
+    init(data: Data) throws {
         // Parse the main database header
         self.database = try iTunesDB(from: data)
 
@@ -57,7 +57,7 @@ final class iTunesDBReader: Sendable {
         // Parse each dataset based on numberOfChildren
         for _ in 0..<database.numberOfChildren {
             guard offset + 16 <= data.count else {
-                throw IPKError.insufficientData
+                throw IPKParsingError.insufficientData
             }
 
             // Read dataset header

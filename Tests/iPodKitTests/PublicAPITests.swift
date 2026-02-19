@@ -25,11 +25,11 @@ import Foundation
         location: nil,
         duration: 180,
         fileSize: 0,
-        bitrate: 0,
-        sampleRate: 0,
-        trackNumber: 0,
-        totalTracks: 0,
-        year: 0,
+        bitrate: nil,
+        sampleRate: nil,
+        trackNumber: nil,
+        totalTracks: nil,
+        year: nil,
         playCount: 0,
         skipCount: 0,
         rating: 0,
@@ -54,11 +54,11 @@ import Foundation
         location: nil,
         duration: 300,
         fileSize: 0,
-        bitrate: 0,
-        sampleRate: 0,
-        trackNumber: 0,
-        totalTracks: 0,
-        year: 0,
+        bitrate: nil,
+        sampleRate: nil,
+        trackNumber: nil,
+        totalTracks: nil,
+        year: nil,
         playCount: 0,
         skipCount: 0,
         rating: 0,
@@ -83,11 +83,11 @@ import Foundation
         location: nil,
         duration: 180,
         fileSize: 0,
-        bitrate: 0,
-        sampleRate: 0,
-        trackNumber: 0,
-        totalTracks: 0,
-        year: 0,
+        bitrate: nil,
+        sampleRate: nil,
+        trackNumber: nil,
+        totalTracks: nil,
+        year: nil,
         playCount: 0,
         skipCount: 0,
         rating: 0,
@@ -224,7 +224,7 @@ import Foundation
         let dummyURL = URL(fileURLWithPath: "/")
         for (index, itdbTrack) in iTunesDB.tracks.enumerated() {
             let playCountEntry = playCounts?.playCountEntry(for: index)
-            let track = Track.from(itdbTrack, index: index, playCountEntry: playCountEntry, iPodURL: dummyURL)
+            let track = Track(itdbTrack, index: index, playCountEntry: playCountEntry, iPodURL: dummyURL)
             unifiedTracks.append(track)
         }
     }
@@ -281,7 +281,7 @@ import Foundation
     }
 
     for itdbPlaylist in playlists {
-        let unifiedPlaylist = Playlist.from(itdbPlaylist)
+        let unifiedPlaylist = Playlist(itdbPlaylist)
         #expect(unifiedPlaylist.id > 0, "Playlist should have a valid ID")
 
         // Verify track IDs can be mapped
@@ -298,24 +298,24 @@ import Foundation
         Track(
             id: 1, index: 0, title: "Song A", artist: "Artist 1", album: "Album X",
             genre: "Rock", composer: nil, comment: nil, grouping: nil,
-            location: nil, duration: 180, fileSize: 0, bitrate: 0, sampleRate: 0,
-            trackNumber: 0, totalTracks: 0, year: 0, playCount: 10, skipCount: 0,
+            location: nil, duration: 180, fileSize: 0, bitrate: nil, sampleRate: nil,
+            trackNumber: nil, totalTracks: nil, year: nil, playCount: 10, skipCount: 0,
             rating: 5, lastPlayed: Date(), lastSkipped: nil, bookmark: nil,
             dateAdded: nil, dateModified: nil
         ),
         Track(
             id: 2, index: 1, title: "Song B", artist: "Artist 2", album: "Album X",
             genre: "Pop", composer: nil, comment: nil, grouping: nil,
-            location: nil, duration: 200, fileSize: 0, bitrate: 0, sampleRate: 0,
-            trackNumber: 0, totalTracks: 0, year: 0, playCount: 5, skipCount: 0,
+            location: nil, duration: 200, fileSize: 0, bitrate: nil, sampleRate: nil,
+            trackNumber: nil, totalTracks: nil, year: nil, playCount: 5, skipCount: 0,
             rating: 3, lastPlayed: Date().addingTimeInterval(-3600), lastSkipped: nil, bookmark: nil,
             dateAdded: nil, dateModified: nil
         ),
         Track(
             id: 3, index: 2, title: "Song C", artist: "Artist 1", album: "Album Y",
             genre: "Rock", composer: nil, comment: nil, grouping: nil,
-            location: nil, duration: 220, fileSize: 0, bitrate: 0, sampleRate: 0,
-            trackNumber: 0, totalTracks: 0, year: 0, playCount: 0, skipCount: 0,
+            location: nil, duration: 220, fileSize: 0, bitrate: nil, sampleRate: nil,
+            trackNumber: nil, totalTracks: nil, year: nil, playCount: 0, skipCount: 0,
             rating: 0, lastPlayed: nil, lastSkipped: nil, bookmark: nil,
             dateAdded: nil, dateModified: nil
         )
@@ -360,31 +360,31 @@ import Foundation
         Track(
             id: 1, index: 0, title: "Song A", artist: nil, album: nil,
             genre: nil, composer: nil, comment: nil, grouping: nil,
-            location: nil, duration: 180, fileSize: 1000000, bitrate: 0, sampleRate: 0,
-            trackNumber: 0, totalTracks: 0, year: 0, playCount: 10, skipCount: 0,
+            location: nil, duration: 180, fileSize: 1000000, bitrate: nil, sampleRate: nil,
+            trackNumber: nil, totalTracks: nil, year: nil, playCount: 10, skipCount: 0,
             rating: 0, lastPlayed: nil, lastSkipped: nil, bookmark: nil,
             dateAdded: nil, dateModified: nil
         ),
         Track(
             id: 2, index: 1, title: "Song B", artist: nil, album: nil,
             genre: nil, composer: nil, comment: nil, grouping: nil,
-            location: nil, duration: 200, fileSize: 2000000, bitrate: 0, sampleRate: 0,
-            trackNumber: 0, totalTracks: 0, year: 0, playCount: 5, skipCount: 0,
+            location: nil, duration: 200, fileSize: 2000000, bitrate: nil, sampleRate: nil,
+            trackNumber: nil, totalTracks: nil, year: nil, playCount: 5, skipCount: 0,
             rating: 0, lastPlayed: nil, lastSkipped: nil, bookmark: nil,
             dateAdded: nil, dateModified: nil
         ),
         Track(
             id: 3, index: 2, title: "Song C", artist: nil, album: nil,
             genre: nil, composer: nil, comment: nil, grouping: nil,
-            location: nil, duration: 220, fileSize: 3000000, bitrate: 0, sampleRate: 0,
-            trackNumber: 0, totalTracks: 0, year: 0, playCount: 3, skipCount: 0,
+            location: nil, duration: 220, fileSize: 3000000, bitrate: nil, sampleRate: nil,
+            trackNumber: nil, totalTracks: nil, year: nil, playCount: 3, skipCount: 0,
             rating: 0, lastPlayed: nil, lastSkipped: nil, bookmark: nil,
             dateAdded: nil, dateModified: nil
         )
     ]
 
     // Calculate total play count
-    let totalPlayCount: UInt64 = tracks.reduce(0) { $0 + UInt64($1.playCount) }
+    let totalPlayCount = tracks.reduce(0) { $0 + $1.playCount }
     #expect(totalPlayCount == 18, "Total play count should be 18")
 
     // Calculate total duration
@@ -392,7 +392,7 @@ import Foundation
     #expect(totalDuration == 600, "Total duration should be 600 seconds")
 
     // Calculate total file size
-    let totalSize: UInt64 = tracks.reduce(0) { $0 + $1.fileSize }
+    let totalSize = tracks.reduce(0) { $0 + $1.fileSize }
     #expect(totalSize == 6000000, "Total size should be 6MB")
 
     // Get unique values
@@ -401,5 +401,3 @@ import Foundation
 
     print("✅ Statistics calculation tests passed")
 }
-
-

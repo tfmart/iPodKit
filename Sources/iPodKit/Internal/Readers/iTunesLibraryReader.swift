@@ -9,17 +9,17 @@ import Foundation
 import SQLite
 
 /// Track information from SQLite-based iTunes Library
-struct ITLibTrack: Sendable {
-    public let pid: Int64
-    public let title: String
-    public let artist: String
-    public let album: String
-    public let totalTimeMs: Double
-    public let playCount: Int
-    public let datePlayed: Int64  // Core Data timestamp (seconds since Jan 1, 2001)
+internal struct ITLibTrack: Sendable {
+    let pid: Int64
+    let title: String
+    let artist: String
+    let album: String
+    let totalTimeMs: Double
+    let playCount: Int
+    let datePlayed: Int64  // Core Data timestamp (seconds since Jan 1, 2001)
 
     /// Last played date converted from Core Data timestamp
-    public var lastPlayedDate: Date? {
+    var lastPlayedDate: Date? {
         guard datePlayed > 0 else { return nil }
         // Core Data timestamp: seconds since Jan 1, 2001
         // Jan 1, 2001 00:00:00 UTC = Unix timestamp 978307200
@@ -28,25 +28,20 @@ struct ITLibTrack: Sendable {
     }
 
     /// Track duration in seconds
-    public var durationInSeconds: Double {
+    var durationInSeconds: Double {
         return totalTimeMs / 1000.0
     }
 
 }
 
 /// Playlist information from SQLite-based iTunes Library
-struct ITLibPlaylist: Sendable {
+internal struct ITLibPlaylist: Sendable {
     let id: Int64
     let name: String
     let isMasterPlaylist: Bool
     let trackPids: [Int64]
 }
 
-/// Error types for iTunes Library Reader
-enum iTunesLibraryReaderError: Error, Sendable {
-    case fileNotFound(String)
-    case databaseError(String)
-}
 
 /// High-level reader for SQLite-based iTunes Library files.
 ///
@@ -75,13 +70,13 @@ final class iTunesLibraryReader: Sendable {
 
     // MARK: - Properties
 
-    public let tracks: [ITLibTrack]
+    let tracks: [ITLibTrack]
     private let _playlists: [ITLibPlaylist]
-    public let libraryPath: URL
-    public let dynamicPath: URL
+    let libraryPath: URL
+    let dynamicPath: URL
 
     /// Device name extracted from the root container (e.g., "John's iPod")
-    public let deviceName: String?
+    let deviceName: String?
 
     /// Internal accessor for playlists
     internal var playlists: [ITLibPlaylist] { _playlists }
@@ -90,8 +85,8 @@ final class iTunesLibraryReader: Sendable {
 
     /// Initialize from iPod root directory
     /// - Parameter iPodPath: Path to iPod root directory (e.g., "/Volumes/iPod")
-    /// - Throws: iTunesLibraryReaderError if files not found or parsing fails
-    public convenience init(iPodPath: String) throws {
+    /// - Throws: IPKParsingError if files not found or parsing fails
+    convenience init(iPodPath: String) throws {
         let basePath = URL(fileURLWithPath: iPodPath)
         let libraryPath = basePath.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
         let dynamicPath = basePath.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Dynamic.itdb")
@@ -102,17 +97,17 @@ final class iTunesLibraryReader: Sendable {
     /// - Parameters:
     ///   - libraryPath: URL to Library.itdb file
     ///   - dynamicPath: URL to Dynamic.itdb file
-    /// - Throws: iTunesLibraryReaderError if files not found or parsing fails
-    public init(libraryPath: URL, dynamicPath: URL) throws {
+    /// - Throws: IPKParsingError if files not found or parsing fails
+    init(libraryPath: URL, dynamicPath: URL) throws {
         self.libraryPath = libraryPath
         self.dynamicPath = dynamicPath
 
         // Verify files exist
         guard FileManager.default.fileExists(atPath: libraryPath.path) else {
-            throw iTunesLibraryReaderError.fileNotFound(libraryPath.path)
+            throw IPKParsingError.fileNotFound(libraryPath.path)
         }
         guard FileManager.default.fileExists(atPath: dynamicPath.path) else {
-            throw iTunesLibraryReaderError.fileNotFound(dynamicPath.path)
+            throw IPKParsingError.fileNotFound(dynamicPath.path)
         }
 
         // Parse the databases
@@ -194,7 +189,7 @@ final class iTunesLibraryReader: Sendable {
 
             return tracks
         } catch {
-            throw iTunesLibraryReaderError.databaseError(error.localizedDescription)
+            throw IPKParsingError.databaseError(error.localizedDescription)
         }
     }
 
@@ -297,7 +292,7 @@ final class iTunesLibraryReader: Sendable {
     /// Check if the given iPod path contains SQLite-based iTunes Library
     /// - Parameter iPodPath: Path to iPod root directory
     /// - Returns: true if SQLite databases are found
-    public static func isSupported(iPodPath: String) -> Bool {
+    static func isSupported(iPodPath: String) -> Bool {
         let basePath = URL(fileURLWithPath: iPodPath)
         return isSupported(iPodURL: basePath)
     }
@@ -305,7 +300,7 @@ final class iTunesLibraryReader: Sendable {
     /// Check if the given iPod URL contains SQLite-based iTunes Library
     /// - Parameter iPodURL: URL to iPod root directory
     /// - Returns: true if SQLite databases are found
-    public static func isSupported(iPodURL: URL) -> Bool {
+    static func isSupported(iPodURL: URL) -> Bool {
         let libraryPath = iPodURL.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Library.itdb")
         let dynamicPath = iPodURL.appendingPathComponent("iPod_Control/iTunes/iTunes Library.itlp/Dynamic.itdb")
         let fm = FileManager.default

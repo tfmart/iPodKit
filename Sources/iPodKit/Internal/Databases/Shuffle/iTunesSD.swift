@@ -13,7 +13,7 @@ import Foundation
 /// It uses big-endian format and is simpler than the standard iTunesDB.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesSD
-struct iTunesSD: IPKParseable, Sendable {
+internal struct iTunesSD: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let versionNumber: UInt32
@@ -25,7 +25,7 @@ struct iTunesSD: IPKParseable, Sendable {
     public init(from data: Data) throws {
         // Check for big-endian format identifier
         guard data.count >= 4 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         let identifier = data.prefix(4)
@@ -33,7 +33,7 @@ struct iTunesSD: IPKParseable, Sendable {
         guard identifier == expectedData else { // "BD\0\0"
             let foundString = identifier.map { String(format: "%02X", $0) }.joined()
             let expectedString = expectedData.map { String(format: "%02X", $0) }.joined()
-            throw IPKError.invalidMagicNumber(expected: expectedString, found: foundString)
+            throw IPKParsingError.invalidMagicNumber(expected: expectedString, found: foundString)
         }
         
         // Parse header fields (big-endian)
@@ -61,7 +61,7 @@ struct iTunesSD: IPKParseable, Sendable {
 }
 
 // MARK: - iTunesSD Track Entry
-struct iTunesSDTrack: IPKParseable, Sendable {
+internal struct iTunesSDTrack: IPKParseable, Sendable {
     // Binary fields (all big-endian)
     public let length: UInt32
     public let startTime: UInt32
@@ -73,7 +73,7 @@ struct iTunesSDTrack: IPKParseable, Sendable {
     
     public init(from data: Data) throws {
         guard data.count >= 512 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         // Read binary fields (big-endian)
@@ -153,7 +153,7 @@ extension iTunesSD {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -168,7 +168,7 @@ extension iTunesSD {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -183,7 +183,7 @@ extension iTunesSD {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -198,7 +198,7 @@ extension iTunesSD {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -215,7 +215,7 @@ extension iTunesSDTrack {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -230,7 +230,7 @@ extension iTunesSDTrack {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -245,7 +245,7 @@ extension iTunesSDTrack {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -260,7 +260,7 @@ extension iTunesSDTrack {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -275,7 +275,7 @@ extension iTunesSDTrack {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -290,7 +290,7 @@ extension iTunesSDTrack {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |
@@ -305,7 +305,7 @@ extension iTunesSDTrack {
         
         func readUInt32BigEndian(from data: Data) throws -> UInt32 {
             guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKError.invalidOffset(offset)
+                throw IPKParsingError.invalidOffset(offset)
             }
             return (UInt32(data[offset]) << 24) |
                    (UInt32(data[offset + 1]) << 16) |

@@ -4,29 +4,31 @@ A Swift library for reading iPod databases.
 
 ## Overview
 
-iPodKit provides access to data stored on iPod devices. It automatically detects the device type and loads available database files, merging data from multiple sources into `Track` and `Playlist` objects.
+iPodKit parses iTunes database files from mounted iPod devices and provides
+a simple, unified interface for accessing track metadata, playlists, and artwork.
+It automatically detects the device type and loads all available database files,
+merging data from multiple sources into ``Track`` and ``Playlist`` objects.
 
 ### Quick Start
 
 ```swift
 import iPodKit
 
-let ipod = try iPod(path: "/Volumes/iPod")
+let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+
+print(ipod.deviceName ?? "Unknown iPod")
 
 for track in ipod.tracks {
     print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
 }
-
-let recent = ipod.recentlyPlayed(limit: 25)
-let results = ipod.search("Beatles")
 ```
 
-### Supported Library Formats
+### Supported Formats
 
-- **iTunesDB** - Binary format used by most iPod models
-- **iTunesSD** - Binary format used by iPod Shuffle
-- **iTunes Library (SQLite)** - SQLite-based format
-- **ArtworkDB** - Album artwork storage
+- **iTunesDB** — Binary format used by iPod Classic, Mini, and Nano
+- **iTunesSD** — Binary format used by iPod Shuffle
+- **iTunes Library (SQLite)** — Used by newer iPod models
+- **ArtworkDB** — Album artwork storage (merged automatically)
 
 ## Topics
 
@@ -36,37 +38,18 @@ let results = ipod.search("Beatles")
 - ``Track``
 - ``Playlist``
 
-### Playback Information
+### Media
 
-- ``iPod/recentlyPlayed(limit:)``
-- ``iPod/mostPlayed(limit:)``
-- ``iPod/neverPlayed()``
-- ``iPod/topRated(minimumRating:)``
+- ``Artwork``
+- ``MediaType``
+- ``iPodModel``
 
-### Search and Filtering
+### Errors
 
-- ``iPod/search(_:)``
-- ``iPod/tracks(byArtist:)``
-- ``iPod/tracks(fromAlbum:)``
-- ``iPod/tracks(inGenre:)``
-
-### Device Information
-
-- ``iPod/deviceType``
-- ``iPod/path``
-
-### Advanced Usage
-
-- ``iPod/DatabaseAccess``
-- ``iPod/Configuration``
+- ``IPKError``
 
 ### Internal Architecture
 
 - <doc:BinaryParsingFramework>
 - <doc:ProtocolBasedDesign>
 - <doc:StandardiPoddatabases>
-
-## See Also
-
-- [iTunes Database Format Specification](http://www.ipodlinux.org/ITunesDB/)
-- [iPodLinux Project](http://www.ipodlinux.org/)

@@ -13,7 +13,7 @@ import Foundation
 /// including volume, position, shuffle mode, and current track.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesPState
-struct iTunesPState: IPKParseable, Sendable {
+internal struct iTunesPState: IPKParseable, Sendable {
     // Binary fields (little-endian)
     public let volume: UInt32
     public let position: UInt32
@@ -26,7 +26,7 @@ struct iTunesPState: IPKParseable, Sendable {
     
     public init(from data: Data) throws {
         guard data.count >= 32 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         // Read binary fields (little-endian)

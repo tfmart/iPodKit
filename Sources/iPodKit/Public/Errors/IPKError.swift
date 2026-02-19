@@ -7,36 +7,42 @@
 
 import Foundation
 
+/// Errors thrown by iPodKit.
 public enum IPKError: Error, Sendable {
-    case invalidOffset(Int)
-    case invalidString
-    case invalidMagicNumber(expected: String, found: String)
-    case insufficientData
-    case corruptedData
-    case fieldSizeMismatch(expected: Int, actual: Int, field: String)
+    /// The provided path does not point to a valid iPod directory.
+    case invalidPath(String)
+
+    /// No supported database was found at the given path.
+    case noDatabaseFound
+
+    /// No artwork is available for the requested track or size.
     case artworkNotFound
+
+    /// The artwork image could not be decoded.
     case artworkDecodingFailed
+
+    /// The database is corrupted and cannot be parsed.
+    case corruptedData
+
+    /// A database-level error occurred.
+    case databaseError(String)
 }
 
 extension IPKError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case .invalidOffset(let offset):
-            return "Invalid offset: \(offset)"
-        case .invalidString:
-            return "Failed to decode string"
-        case .invalidMagicNumber(let expected, let found):
-            return "Invalid magic number. Expected '\(expected)', found '\(found)'"
-        case .insufficientData:
-            return "Insufficient data for parsing"
-        case .corruptedData:
-            return "Data appears to be corrupted"
-        case .fieldSizeMismatch(let expected, let actual, let field):
-            return "Field size mismatch in \(field): expected \(expected) bytes, got \(actual) bytes"
+        case .invalidPath(let path):
+            return "Invalid iPod path: \(path)"
+        case .noDatabaseFound:
+            return "No supported database found on the iPod"
         case .artworkNotFound:
             return "Artwork not found"
         case .artworkDecodingFailed:
             return "Failed to decode artwork image"
+        case .corruptedData:
+            return "Data appears to be corrupted"
+        case .databaseError(let message):
+            return "Database error: \(message)"
         }
     }
 }

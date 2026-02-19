@@ -22,12 +22,12 @@ internal struct ArtworkImageItem: Sendable {
 
     init(from data: Data) throws {
         guard data.count >= 4 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
 
         let magic = try data.readString(at: 0, length: 4)
         guard magic == "mhii" else {
-            throw IPKError.invalidMagicNumber(expected: "mhii", found: magic)
+            throw IPKParsingError.invalidMagicNumber(expected: "mhii", found: magic)
         }
 
         self.headerLength = try data.readUInt32(at: 4)

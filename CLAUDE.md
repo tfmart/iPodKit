@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 iPodKit is a Swift Package Manager library for parsing iTunes database files from iPod devices. It follows a **simple, invisible, gradual** SDK design pattern inspired by RevenueCat.
 
+See `ARCHITECTURE.md` for the full init flow, parsing pipeline, and internal type mapping.
+
 ## Build and Test Commands
 
 ```bash
@@ -20,6 +22,9 @@ swift test --filter iPodKitTests
 
 # Build and run the analyzer tool
 swift run analyze-itunes-db /path/to/iPod
+
+# Generate documentation
+swift package generate-documentation
 ```
 
 ## SDK Design Principles
@@ -32,28 +37,24 @@ iPodKit follows three core principles:
 
 ## Core Architecture
 
-### Public API Layer (Façade)
+### Public API Layer (`Public/`)
 
 The primary public interface consists of:
 
-- **`iPod`** - Main entry point, the façade that abstracts all complexity
+- **`iPod`** - Main entry point, the facade that abstracts all complexity
 - **`Track`** - Unified track model combining data from multiple sources
 - **`Playlist`** - Unified playlist model
 - **`Artwork`** - Album artwork with multiple size options
 - **`MediaType`** - Track media type (audio, video, podcast, etc.)
 - **`iPodModel`** - iPod device model identification
-- **`IPKError`** - Error types for parsing failures
+- **`IPKError`** - Public error types for consumers
 
 ```swift
-// Initialize from URL
 let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
 
-// Access device info
 print(ipod.deviceName ?? "Unknown")
 print("Tracks: \(ipod.tracks.count)")
-print("Playlists: \(ipod.playlists.count)")
 
-// Access track data
 for track in ipod.tracks {
     print("\(track.title ?? "Unknown") - \(track.artist ?? "Unknown")")
     if let artwork = track.artwork {
@@ -62,12 +63,20 @@ for track in ipod.tracks {
 }
 ```
 
-### Internal Implementation Layer
+### Internal Implementation Layer (`Internal/`)
 
 Internal classes handle the complexity (users don't see these):
 
-- **`iPodDBReader`** (internal) - Orchestrates loading all database files
-- **`iTunesDBReader`** - Parses iTunesDB format (exposed via `databases.iTunesDB`)
+- **`iPodDBReader`** - Orchestrates loading all database files
+- **`iTunesDBReader`** - Parses iTunesDB format
+- **`iTunesLibraryReader`** - Parses SQLite-based iTunes Library
+
+### Error System
+
+Two-tier error design:
+
+- **`IPKError`** (public) - What consumers catch: `invalidPath`, `noDatabaseFound`, `artworkNotFound`, `artworkDecodingFailed`, `corruptedData`, `databaseError`
+- **`IPKParsingError`** (internal) - What parsers throw: `invalidOffset`, `invalidString`, `invalidMagicNumber`, `insufficientData`, `fieldSizeMismatch`, `fileNotFound`, `databaseError`
 
 ### Database Parsers
 
@@ -99,45 +108,59 @@ Protocol-based architecture for type-safe binary parsing:
 
 ```
 Sources/iPodKit/
-├── iPod.swift                 # Main façade (public API)
-├── iPodKit.swift              # Library exports
-├── Core/
-│   ├── Protocols/             # IPKField, IPKObject, IPKParseable
-│   ├── Extensions/            # Data+Extensions
-│   ├── Errors/                # IPKError
-│   └── Fields/                # Common field structures
-├── Databases/
-│   ├── Standard/              # iTunesDB, PlayCounts, ITDBTrack
-│   ├── Shuffle/               # iTunesSD, iTunesStats, etc.
-│   ├── Media/                 # ArtworkDatabase, PhotoDatabase
-│   └── Playlists/             # ITDBPlaylist, OTGPlaylist
-├── Models/
-│   ├── Track.swift            # Unified track model
-│   ├── Playlist.swift         # Unified playlist model
-│   ├── Artwork.swift          # Album artwork model
-│   ├── MediaType.swift        # Track media type enum
-│   └── iPodModel.swift        # Device model identification
-└── Readers/
-    ├── iPodDBReader.swift     # Internal orchestrator
-    ├── iTunesDBReader.swift   # iTunesDB parser
-    └── iTunesLibraryReader.swift
+├── iPodKit.swift              # Module-level documentation
+├── Documentation.docc/        # DocC articles
+├── Public/
+│   ├── iPod.swift             # Main facade (public API)
+│   ├── Models/
+│   │   ├── Track.swift        # Unified track model
+│   │   ├── Playlist.swift     # Unified playlist model
+│   │   ├── Artwork.swift      # Album artwork model
+│   │   ├── MediaType.swift    # Track media type enum
+│   │   └── iPodModel.swift    # Device model identification
+│   └── Errors/
+│       └── IPKError.swift     # Public error types
+└── Internal/
+    ├── Core/
+    │   ├── Protocols/         # IPKField, IPKParseable
+    │   ├── Extensions/        # Data+Extensions
+    │   ├── Errors/            # IPKParsingError (internal)
+    │   └── ArtworkDecoder.swift
+    ├── Databases/
+    │   ├── Standard/          # iTunesDB, PlayCounts, ITDBTrack
+    │   ├── Shuffle/           # iTunesSD, iTunesStats, etc.
+    │   ├── Media/             # ArtworkDatabase, PhotoDatabase
+    │   └── Playlists/         # ITDBPlaylist, OTGPlaylist
+    ├── Models/
+    │   └── EqualizerPresets.swift
+    └── Readers/
+        ├── iPodDBReader.swift
+        ├── iTunesDBReader.swift
+        └── iTunesLibraryReader.swift
 ```
 
 ## Development Patterns
 
+### Access Control Rules
+
+- Everything in `Public/` is `public`
+- Everything in `Internal/` is explicitly `internal` (never `public`)
+- Use `@testable import iPodKit` in tests to access internal types
+
 ### Adding Features to Public API
 
-1. Add methods to `iPod` class in `iPod.swift`
-2. Keep implementation details in internal classes
+1. Add methods to `iPod` class in `Public/iPod.swift`
+2. Keep implementation details in `Internal/` classes
 3. Use `Track` and `Playlist` unified models for return types
+4. Throw `IPKError` from public API, `IPKParsingError` from internal code
 
 ### Adding New Database Support
 
-1. Create parser in appropriate `/Databases` category
+1. Create parser in appropriate `Internal/Databases/` category
 2. Conform to `IPKParseable` protocol
 3. Define binary layout using `IPKField` structs
 4. Add to `iPodDBReader` for automatic loading
-5. Expose via `iPod.DatabaseAccess` if needed
+5. Convert to public models via internal convenience initializers (e.g., `Track(_:index:iPodURL:)`)
 
 ### Binary Field Reading
 
@@ -161,6 +184,11 @@ let macEpochOffset: TimeInterval = 2082844800
 let unixTimestamp = TimeInterval(timestamp) - macEpochOffset
 return Date(timeIntervalSince1970: unixTimestamp)
 ```
+
+### Documentation Style
+
+- **Public API**: ScrobbleKit-style DocC with `/// Parameters`, `/// Returns`, `/// Throws`, code examples. Focus on what the user gets, not internal implementation.
+- **Internal code**: Brief `//` comments for design decisions. Use `// MARK:` sections.
 
 ## Technical Documentation
 

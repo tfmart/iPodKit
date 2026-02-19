@@ -13,7 +13,7 @@ import Foundation
 /// on the iPod using track indexes. It becomes invalid when iTunesDB changes.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#OTG_Playlist_File
-struct OTGPlaylist: IPKParseable, Sendable {
+internal struct OTGPlaylist: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let numberOfSongs: UInt32

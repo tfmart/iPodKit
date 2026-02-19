@@ -13,7 +13,7 @@ import Foundation
 /// It stores play counts, ratings, and last played times in little-endian format.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesStats
-struct iTunesStats: IPKParseable, Sendable {
+internal struct iTunesStats: IPKParseable, Sendable {
     // Binary fields
     public let numberOfEntries: UInt32
     public let entryLength: UInt32
@@ -23,7 +23,7 @@ struct iTunesStats: IPKParseable, Sendable {
     
     public init(from data: Data) throws {
         guard data.count >= 8 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         // Parse header fields (little-endian)
@@ -49,7 +49,7 @@ struct iTunesStats: IPKParseable, Sendable {
 }
 
 // MARK: - iTunes Stat Entry
-struct iTunesStatEntry: IPKParseable, Sendable {
+internal struct iTunesStatEntry: IPKParseable, Sendable {
     // Binary fields (little-endian)
     public let playCount: UInt32
     public let lastPlayed: UInt32
@@ -60,7 +60,7 @@ struct iTunesStatEntry: IPKParseable, Sendable {
     
     public init(from data: Data) throws {
         guard data.count >= 24 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         // Read fields (little-endian)

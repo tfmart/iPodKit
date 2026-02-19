@@ -10,7 +10,7 @@ import Foundation
 /// Data Object in iTunes database
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Data_Object
-struct ITDBDataObject: IPKParseable, Sendable {
+internal struct ITDBDataObject: IPKParseable, Sendable {
     let headerLength: UInt32
     let totalLength: UInt32
     let type: TypeIdentifier

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ArtworkAlbumList: IPKParseable, Sendable {
+internal struct ArtworkAlbumList: IPKParseable, Sendable {
     let headerLength: UInt32
     let totalLength: UInt32
     let numberOfAlbums: UInt32

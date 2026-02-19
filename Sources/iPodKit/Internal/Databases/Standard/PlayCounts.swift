@@ -13,7 +13,7 @@ import Foundation
 /// since the last sync with iTunes. It gets rebuilt whenever the iTunesDB changes.
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Play_Counts_File
-struct PlayCounts: IPKParseable, Sendable {
+internal struct PlayCounts: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let entryLength: UInt32
@@ -49,7 +49,7 @@ struct PlayCounts: IPKParseable, Sendable {
 }
 
 // MARK: - Play Count Entry
-struct PlayCountEntry: IPKParseable, Sendable {
+internal struct PlayCountEntry: IPKParseable, Sendable {
     // Binary fields
     public let playCount: UInt32
     public let lastPlayed: UInt32
@@ -62,7 +62,7 @@ struct PlayCountEntry: IPKParseable, Sendable {
         // Note: Play count entries don't have magic numbers in some versions
         // We'll read the fields directly
         guard data.count >= 16 else {
-            throw IPKError.insufficientData
+            throw IPKParsingError.insufficientData
         }
         
         self.playCount = try data.readUInt32(at: 0)

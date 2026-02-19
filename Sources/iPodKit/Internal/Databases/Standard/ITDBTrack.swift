@@ -71,7 +71,7 @@ import Foundation
 /// - ``fileSizeFormatted``
 /// 
 /// Reference: [iTunes Database Track Item Specification](http://www.ipodlinux.org/ITunesDB/#Track_Item)
-struct ITDBTrack: IPKParseable, Sendable {
+internal struct ITDBTrack: IPKParseable, Sendable {
     // Binary fields
     public let headerLength: UInt32
     public let totalLength: UInt32

@@ -11,7 +11,7 @@ import Foundation
 /// Playlist object in iTunes database
 ///
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Playlist
-struct ITDBPlaylist: IPKParseable, Sendable {
+internal struct ITDBPlaylist: IPKParseable, Sendable {
     let headerLength: UInt32
     let totalLength: UInt32
     let dataObjectChildCount: UInt32

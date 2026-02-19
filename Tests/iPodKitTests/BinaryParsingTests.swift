@@ -34,16 +34,16 @@ import Foundation
     let smallData = Data([0x12, 0x34])
     
     // Test reading beyond data bounds
-    #expect(throws: IPKError.self) {
+    #expect(throws: IPKParsingError.self) {
         _ = try smallData.readUInt32(at: 0)
     }
-    
-    #expect(throws: IPKError.self) {
+
+    #expect(throws: IPKParsingError.self) {
         _ = try smallData.readUInt64(at: 0)
     }
-    
+
     // Test reading at invalid offset
-    #expect(throws: IPKError.self) {
+    #expect(throws: IPKParsingError.self) {
         _ = try smallData.readUInt16(at: 10)
     }
 }
@@ -119,16 +119,25 @@ import Foundation
 
 // MARK: - Error Handling Tests
 
-@Test func testIPKErrorTypes() async throws {
-    // Test different error types
-    let invalidMagicError = IPKError.invalidMagicNumber(expected: "mhbd", found: "abcd")
-    let insufficientDataError = IPKError.insufficientData
-    _ = IPKError.corruptedData // Verify it exists
-    let fieldSizeMismatchError = IPKError.fieldSizeMismatch(expected: 4, actual: 2, field: "test")
-    
+@Test func testIPKParsingErrorTypes() async throws {
+    // Test internal parsing error types
+    let invalidMagicError = IPKParsingError.invalidMagicNumber(expected: "mhbd", found: "abcd")
+    let insufficientDataError = IPKParsingError.insufficientData
+    let fieldSizeMismatchError = IPKParsingError.fieldSizeMismatch(expected: 4, actual: 2, field: "test")
+
     #expect(invalidMagicError.localizedDescription.contains("mhbd"))
     #expect(insufficientDataError.localizedDescription.contains("data"))
     #expect(fieldSizeMismatchError.localizedDescription.contains("test"))
+}
+
+@Test func testIPKErrorTypes() async throws {
+    // Test public error types
+    _ = IPKError.corruptedData
+    let artworkError = IPKError.artworkNotFound
+    let dbError = IPKError.databaseError("test")
+
+    #expect(artworkError.localizedDescription.contains("Artwork"))
+    #expect(dbError.localizedDescription.contains("test"))
 }
 
 @Test func testMagicNumberValidationEdgeCases() async throws {
@@ -138,19 +147,19 @@ import Foundation
 
     // Test with empty data
     let emptyData = Data()
-    #expect(throws: IPKError.self) {
+    #expect(throws: IPKParsingError.self) {
         try TestObject.validateMagicNumber(from: emptyData, expectedId: "test")
     }
 
     // Test with partial magic number
     let partialData = Data("te".utf8)
-    #expect(throws: IPKError.self) {
+    #expect(throws: IPKParsingError.self) {
         try TestObject.validateMagicNumber(from: partialData, expectedId: "test")
     }
 
     // Test with correct length but wrong content
     let wrongData = Data("wxyz".utf8)
-    #expect(throws: IPKError.self) {
+    #expect(throws: IPKParsingError.self) {
         try TestObject.validateMagicNumber(from: wrongData, expectedId: "test")
     }
 }

@@ -11,7 +11,7 @@ import Foundation
 ///
 /// This is a flattened representation combining data from mhii and mhni.
 /// For new code, prefer using `ArtworkImageItem` and `ArtworkThumbnail`.
-struct ArtworkImage: Sendable {
+internal struct ArtworkImage: Sendable {
     public let correlationId: UInt32
     public let ithmbOffset: UInt32
     public let imageSize: UInt32

@@ -53,46 +53,7 @@ public enum MediaType: UInt32, Sendable, CaseIterable {
         default: self = .unknown
         }
     }
-}
-
-// MARK: - Convenience Properties
-
-public extension MediaType {
-    /// Whether this media type represents video content
-    var isVideo: Bool {
-        switch self {
-        case .video, .videoPodcast, .musicVideo, .tvShow, .tvShowWithMusic:
-            return true
-        case .audio, .podcast, .audiobook, .unknown:
-            return false
-        }
-    }
-
-    /// Whether this media type represents audio-only content
-    var isAudioOnly: Bool {
-        switch self {
-        case .audio, .podcast, .audiobook:
-            return true
-        case .video, .videoPodcast, .musicVideo, .tvShow, .tvShowWithMusic, .unknown:
-            return false
-        }
-    }
-
-    /// Whether this media type is a podcast (audio or video)
-    var isPodcast: Bool {
-        self == .podcast || self == .videoPodcast
-    }
-
-    /// Whether this media type is a TV show
-    var isTVShow: Bool {
-        self == .tvShow || self == .tvShowWithMusic
-    }
-
-    /// Whether this media type supports bookmarking by default
-    var supportsBookmark: Bool {
-        self == .audiobook || isPodcast
-    }
-
+    
     /// Human-readable description of the media type
     var displayName: String {
         switch self {

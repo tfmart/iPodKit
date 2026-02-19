@@ -10,14 +10,14 @@ import Foundation
 extension Data {
     func readUInt8(at offset: Int) throws -> UInt8 {
         guard offset >= 0 && offset < count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         return self[offset]
     }
     
     func readUInt16(at offset: Int) throws -> UInt16 {
         guard offset >= 0 && offset + 1 < count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         return UInt16(self[offset]) | (UInt16(self[offset + 1]) << 8)
     }
@@ -29,7 +29,7 @@ extension Data {
     
     func readUInt32(at offset: Int) throws -> UInt32 {
         guard offset >= 0 && offset + 3 < count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         return UInt32(self[offset]) |
                (UInt32(self[offset + 1]) << 8) |
@@ -44,7 +44,7 @@ extension Data {
 
     func readUInt64(at offset: Int) throws -> UInt64 {
         guard offset >= 0 && offset + 7 < count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         let low = try readUInt32(at: offset)
         let high = try readUInt32(at: offset + 4)
@@ -53,33 +53,33 @@ extension Data {
     
     func readString(at offset: Int, length: Int) throws -> String {
         guard offset >= 0 && offset + length <= count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         let data = subdata(in: offset..<(offset + length))
         guard let string = String(data: data, encoding: .ascii) else {
-            throw IPKError.invalidString
+            throw IPKParsingError.invalidString
         }
         return string.trimmingCharacters(in: .controlCharacters)
     }
     
     func readUTF16String(at offset: Int, length: Int) throws -> String {
         guard offset >= 0 && offset + length <= count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         let data = subdata(in: offset..<(offset + length))
         guard let string = String(data: data, encoding: .utf16LittleEndian) else {
-            throw IPKError.invalidString
+            throw IPKParsingError.invalidString
         }
         return string.trimmingCharacters(in: .controlCharacters.union(.whitespacesAndNewlines))
     }
     
     func readUTF8String(at offset: Int, length: Int) throws -> String {
         guard offset >= 0 && offset + length <= count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         let data = subdata(in: offset..<(offset + length))
         guard let string = String(data: data, encoding: .utf8) else {
-            throw IPKError.invalidString
+            throw IPKParsingError.invalidString
         }
         return string.trimmingCharacters(in: .controlCharacters.union(.whitespacesAndNewlines))
     }
@@ -123,7 +123,7 @@ extension Data {
     
     func readBytes(at offset: Int, length: Int) throws -> Data {
         guard offset >= 0 && offset + length <= count else {
-            throw IPKError.invalidOffset(offset)
+            throw IPKParsingError.invalidOffset(offset)
         }
         return subdata(in: offset..<(offset + length))
     }
