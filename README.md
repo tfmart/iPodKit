@@ -92,7 +92,6 @@ if let artwork = track.artwork {
 
 ```swift
 ipod.deviceName       // String? — e.g., "John's iPod"
-ipod.deviceTimeZone   // TimeZone? — last synced timezone
 ```
 
 ## Supported Formats
