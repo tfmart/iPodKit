@@ -85,40 +85,24 @@ extension Data {
     }
     
     func readMHODString(at offset: Int, length: Int) throws -> String {
-        // Try UTF-16 first (more common in iTunes DB), then UTF-8
-        var result: String
-        if let utf16String = try? readUTF16String(at: offset, length: length), !utf16String.isEmpty {
+        let stringData = try readBytes(at: offset, length: length)
+        let likelyUTF16 = stringData.count.isMultiple(of: 2) && stringData.indices
+            .filter { $0 % 2 == 1 }
+            .filter { stringData[$0] == 0 }
+            .count >= Swift.max(1, stringData.count / 4)
+
+        let result: String
+        if likelyUTF16, let utf16String = try? readUTF16String(at: offset, length: length), !utf16String.isEmpty {
+            result = utf16String
+        } else if let utf8String = try? readUTF8String(at: offset, length: length), !utf8String.isEmpty {
+            result = utf8String
+        } else if let utf16String = try? readUTF16String(at: offset, length: length), !utf16String.isEmpty {
             result = utf16String
         } else {
-            result = try readUTF8String(at: offset, length: length)
+            result = ""
         }
         
-        // Clean up common iTunes DB string artifacts
-        // Remove leading padding characters that are often present
-        var cleaned = result.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Remove single character + whitespace prefix pattern (common in iTunes DB)
-        if cleaned.count > 4 {
-            let prefix = String(cleaned.prefix(4))
-            // Check if it's a single char followed by spaces
-            if prefix.count >= 2 && !prefix.first!.isLetter && !prefix.first!.isNumber {
-                let afterFirstChar = String(prefix.dropFirst())
-                if afterFirstChar.allSatisfy({ $0.isWhitespace }) {
-                    cleaned = String(cleaned.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-            }
-        }
-        
-        // Remove any remaining leading non-letter/number characters
-        while !cleaned.isEmpty {
-            let firstChar = cleaned.first!
-            if firstChar.isLetter || firstChar.isNumber || firstChar == "(" || firstChar == "[" || firstChar == "\"" {
-                break
-            }
-            cleaned = String(cleaned.dropFirst())
-        }
-        
-        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        return result.trimmingCharacters(in: .controlCharacters.union(.whitespacesAndNewlines))
     }
     
     func readBytes(at offset: Int, length: Int) throws -> Data {

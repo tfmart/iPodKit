@@ -84,13 +84,13 @@ final class iTunesDBReader: Sendable {
 
     private static func parseTrackList(from data: Data) throws -> [ITDBTrack] {
         // Skip dataset header to get to track list
-        let trackListOffset = Int(try iTunesDBDataSet.HeaderLength().readUInt32(from: data))
+        let trackListOffset = Int(try iTunesDBDataSet.headerLengthField.readUInt32(from: data))
         let trackListData = data.subdata(in: trackListOffset..<data.count)
 
         let trackList = try ITDBTrackList(from: trackListData)
         let numberOfSongs = try trackList.getNumberOfSongs(from: trackListData)
 
-        var currentOffset = Int(try ITDBTrackList.HeaderLength().readUInt32(from: trackListData))
+        var currentOffset = Int(try ITDBTrackList.headerLengthField.readUInt32(from: trackListData))
         var tracks: [ITDBTrack] = []
 
         // Parse each track
@@ -109,13 +109,13 @@ final class iTunesDBReader: Sendable {
 
     private static func parsePlaylistList(from data: Data) throws -> [ITDBPlaylist] {
         // Skip dataset header to get to playlist list
-        let playlistListOffset = Int(try iTunesDBDataSet.HeaderLength().readUInt32(from: data))
+        let playlistListOffset = Int(try iTunesDBDataSet.headerLengthField.readUInt32(from: data))
         let playlistListData = data.subdata(in: playlistListOffset..<data.count)
 
         let playlistList = try ITDBPlaylistList(from: playlistListData)
         let numberOfPlaylists = try playlistList.getNumberOfPlaylists(from: playlistListData)
 
-        var currentOffset = Int(try ITDBPlaylistList.HeaderLength().readUInt32(from: playlistListData))
+        var currentOffset = Int(try ITDBPlaylistList.headerLengthField.readUInt32(from: playlistListData))
         var playlists: [ITDBPlaylist] = []
 
         // Parse each playlist
@@ -133,7 +133,7 @@ final class iTunesDBReader: Sendable {
     }
 }
 
-// MARK: - Public API
+// MARK: - Internal API
 
 extension iTunesDBReader {
 
@@ -155,20 +155,6 @@ extension iTunesDBReader {
     /// Device name extracted from the master playlist
     var deviceName: String? {
         return playlists.first { $0.isMasterPlaylist }?.name
-    }
-
-    /// Get tracks filtered by a predicate
-    /// - Parameter predicate: Filter condition
-    /// - Returns: Filtered tracks
-    func tracks(where predicate: (ITDBTrack) -> Bool) -> [ITDBTrack] {
-        return tracks.filter(predicate)
-    }
-
-    /// Get track by unique ID
-    /// - Parameter id: Track unique ID
-    /// - Returns: Track if found
-    func track(withId id: UInt32) -> ITDBTrack? {
-        return tracks.first { $0.uniqueId == id }
     }
 
     /// Search tracks by title
@@ -219,30 +205,4 @@ extension iTunesDBReader {
         return Array(Set(genres)).sorted()
     }
 
-    /// Get tracks that have been played at least once
-    /// - Returns: Array of played tracks
-    func playedTracks() -> [ITDBTrack] {
-        return tracks.filter { $0.playCount > 0 }
-    }
-
-    /// Get tracks played after a specific date
-    /// - Parameter date: Date to filter from
-    /// - Returns: Array of recently played tracks
-    func tracks(playedAfter date: Date) -> [ITDBTrack] {
-        return tracks.filter { track in
-            guard let lastPlayed = track.lastPlayedDate else { return false }
-            return lastPlayed > date
-        }
-    }
-
-    /// Get most played tracks
-    /// - Parameter limit: Number of tracks to return
-    /// - Returns: Array of most played tracks
-    func mostPlayedTracks(limit: Int = 10) -> [ITDBTrack] {
-        return tracks
-            .filter { $0.playCount > 0 }
-            .sorted { $0.playCount > $1.playCount }
-            .prefix(limit)
-            .map { $0 }
-    }
 }

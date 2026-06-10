@@ -15,12 +15,12 @@ import Foundation
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesShuffle
 internal struct iTunesShuffle: IPKParseable, Sendable {
     // Binary fields
-    public let numberOfTracks: UInt32
+    let numberOfTracks: UInt32
     
     // Shuffled track indexes
-    public let shuffledIndexes: [UInt32]
+    let shuffledIndexes: [UInt32]
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         guard data.count >= 4 else {
             throw IPKParsingError.insufficientData
         }
@@ -82,7 +82,7 @@ extension iTunesShuffle {
     }
 }
 
-// MARK: - Public API
+// MARK: - Internal API
 extension iTunesShuffle {
     /// Get statistics about the shuffle sequence
     /// - Returns: Dictionary containing shuffle statistics

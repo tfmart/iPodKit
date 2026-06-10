@@ -11,40 +11,29 @@ import Foundation
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#DataSet
 internal struct iTunesDBDataSet: IPKParseable {
-    public let headerLength: UInt32
-    public let totalLength: UInt32
-    public let type: UInt32
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let type: UInt32
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhsd")
         
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        self.type = try Self.TypeField().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.totalLength = try Self.totalLengthField.readUInt32(from: data)
+        self.type = try Self.typeFieldField.readUInt32(from: data)
     }
     
     func getType(from data: Data) throws -> UInt32 {
-        return try Self.TypeField().readUInt32(from: data)
+        return try Self.typeFieldField.readUInt32(from: data)
     }
     
     func getTotalLength(from data: Data) throws -> UInt32 {
-        return try Self.TotalLength().readUInt32(from: data)
+        return try Self.totalLengthField.readUInt32(from: data)
     }
 }
 
 extension iTunesDBDataSet {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct TypeField: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let typeFieldField = IPKBinaryField(offset: 12, length: 4)
 }

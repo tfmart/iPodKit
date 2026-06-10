@@ -9,20 +9,20 @@ import Foundation
 
 internal struct PhotoImage: IPKParseable, Sendable {
     let headerLength: UInt32
-    public let totalLength: UInt32
-    public let imageId: UInt32
-    public let originalDate: UInt32
-    public let imageSize: UInt32
-    public let fileName: String?
+    let totalLength: UInt32
+    let imageId: UInt32
+    let originalDate: UInt32
+    let imageSize: UInt32
+    let fileName: String?
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhii")
         
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        self.imageId = try Self.ImageId().readUInt32(from: data)
-        self.originalDate = try Self.OriginalDate().readUInt32(from: data)
-        self.imageSize = try Self.ImageSize().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.totalLength = try Self.totalLengthField.readUInt32(from: data)
+        self.imageId = try Self.imageIdField.readUInt32(from: data)
+        self.originalDate = try Self.originalDateField.readUInt32(from: data)
+        self.imageSize = try Self.imageSizeField.readUInt32(from: data)
         
         // Try to read filename if there's more data
         if Int(headerLength) < data.count {
@@ -35,48 +35,9 @@ internal struct PhotoImage: IPKParseable, Sendable {
 }
 
 extension PhotoImage {
-    /// File extension if available
-    var fileExtension: String? {
-        guard let fileName = fileName else { return nil }
-        let url = URL(fileURLWithPath: fileName)
-        let ext = url.pathExtension
-        return ext.isEmpty ? nil : ext.lowercased()
-    }
-    
-    /// Check if this is a JPEG image
-    var isJPEG: Bool {
-        return fileExtension == "jpg" || fileExtension == "jpeg"
-    }
-    
-    /// Check if this is a PNG image
-    var isPNG: Bool {
-        return fileExtension == "png"
-    }
-}
-
-extension PhotoImage {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct ImageId: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
-    
-    struct OriginalDate: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-    }
-    
-    struct ImageSize: IPKField {
-        var offset: Int { 20 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let imageIdField = IPKBinaryField(offset: 12, length: 4)
+    static let originalDateField = IPKBinaryField(offset: 16, length: 4)
+    static let imageSizeField = IPKBinaryField(offset: 20, length: 4)
 }

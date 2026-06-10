@@ -6,29 +6,30 @@
 //
 
 import Foundation
-import os
+import os.log
+
+private let optionalDatabaseLog = OSLog(subsystem: "iPodKit", category: "iPodDBReader")
 
 /// Unified iPod Database Reader supporting all iTunes database file types.
-/// 
+///
 /// ``iPodDBReader`` provides a comprehensive interface for reading and parsing
 /// all types of iPod database files, from the main iTunesDB to specialized
 /// files like Play Counts, Artwork Database, Photo Database, and iPod Shuffle files.
-/// 
-/// The reader automatically detects the iPod device type and loads all available
-/// database files from the iPod directory structure.
-/// 
+///
+/// The reader automatically detects the database type and loads available files
+/// from the provided directory or database file.
+///
 /// ## Usage
 /// 
 /// ```swift
-/// // Parse entire iPod directory with auto-detection
-/// let reader = try iPodDBReader(iPodPath: "/Volumes/iPod")
+/// let reader = try iPodDBReader(contentsOf: databaseURL)
 /// 
 /// print("Device Type: \(reader.deviceType)")
 /// print("Loaded Files: \(reader.loadedFiles)")
 /// 
 /// // Access different database types
 /// if let artworkDB = reader.artworkDB {
-///     print("Found \(artworkDB.images.count) artwork images")
+///     print("Found \(artworkDB.imageItems.count) artwork images")
 /// }
 /// ```
 /// 
@@ -91,7 +92,6 @@ internal class iPodDBReader {
 
     private(set) var basePath: String
     private(set) var deviceType: iPodDeviceType
-
     /// Device name extracted from database files (e.g., "John's iPod")
     /// For SQLite-based iTunes Library, extracted from primary container.
     /// For binary iTunesDB, extracted from master playlist name.
@@ -99,35 +99,10 @@ internal class iPodDBReader {
         return iTunesLibrary?.deviceName ?? iTunesDB?.deviceName
     }
 
-    // MARK: - Device Type Detection
-
-    enum iPodDeviceType {
-        case standard       // Regular iPod with iTunesDB
-        case shuffle        // iPod Shuffle with iTunesSD
-        case photo          // iPod Photo with artwork support
-        case sqliteLibrary  // Newer iPods with SQLite-based iTunes Library
-        case unknown
-
-        var supportedFiles: [String] {
-            switch self {
-            case .standard:
-                return ["iTunesDB", "Play Counts", "OTG Playlist File", "Equalizer Presets"]
-            case .shuffle:
-                return ["iTunesSD", "iTunesStats", "iTunesShuffle", "iTunesPState"]
-            case .photo:
-                return ["iTunesDB", "Play Counts", "OTG Playlist File", "ArtworkDB", "Photo Database"]
-            case .sqliteLibrary:
-                return ["Library.itdb", "Dynamic.itdb", "Locations.itdb", "Genius.itdb", "Extras.itdb"]
-            case .unknown:
-                return []
-            }
-        }
-    }
-    
     // MARK: - Initialization
     
-    /// Initialize with iPod root directory path
-    /// - Parameter iPodPath: Path to iPod root directory
+    /// Initialize with a directory that contains a supported iPod database layout.
+    /// - Parameter iPodPath: Path to a directory that contains database files.
     /// - Throws: Parsing or file reading errors
     init(iPodPath: String) throws {
         self.basePath = iPodPath
@@ -136,6 +111,33 @@ internal class iPodDBReader {
         detectDeviceType()
         try loadDatabaseFiles()
     }
+
+    /// Initialize with a database file or containing directory.
+    /// - Parameter url: URL to a supported database file or a directory containing one.
+    /// - Throws: Parsing or file reading errors.
+    convenience init(contentsOf url: URL) throws {
+        var isDirectory: ObjCBool = false
+        let path = url.path
+        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) else {
+            throw IPKParsingError.fileNotFound(path)
+        }
+
+        if isDirectory.boolValue {
+            try self.init(iPodPath: path)
+            return
+        }
+
+        if url.lastPathComponent == "Library.itdb" {
+            try self.init(libraryPath: url)
+            return
+        }
+
+        guard let fileType = DatabaseFileType(url: url) else {
+            throw IPKParsingError.databaseError("Unsupported iPod database file: \(url.lastPathComponent)")
+        }
+
+        try self.init(filePath: path, fileType: fileType)
+    }
     
     /// Initialize with specific database file
     /// - Parameters:
@@ -143,50 +145,23 @@ internal class iPodDBReader {
     ///   - fileType: Type of database file
     /// - Throws: Parsing or file reading errors
     convenience init(filePath: String, fileType: DatabaseFileType) throws {
-        let directoryPath = URL(fileURLWithPath: filePath).deletingLastPathComponent().path
-        try self.init(iPodPath: directoryPath)
-        
-        // Load the specific file
+        let fileURL = URL(fileURLWithPath: filePath)
+        try self.init(iPodPath: Self.basePath(for: fileURL, fileType: fileType))
+
         try loadSpecificFile(at: filePath, type: fileType)
     }
-    
-    // MARK: - Database File Types
-    
-    enum DatabaseFileType: String, CaseIterable {
-        case iTunesDB = "iTunesDB"
-        case playCounts = "Play Counts"
-        case otgPlaylist = "OTG Playlist File"
-        case equalizerPresets = "Equalizer Presets"
-        case artworkDB = "ArtworkDB"
-        case photoDB = "Photo Database"
-        case iTunesSD = "iTunesSD"
-        case iTunesStats = "iTunesStats"
-        case iTunesShuffle = "iTunesShuffle"
-        case iTunesPState = "iTunesPState"
-        
-        var standardPaths: [String] {
-            switch self {
-            case .iTunesDB:
-                return ["iPod_Control/iTunes/iTunesDB"]
-            case .playCounts:
-                return ["iPod_Control/iTunes/Play Counts"]
-            case .otgPlaylist:
-                return ["iPod_Control/iTunes/OTG Playlist File"]
-            case .equalizerPresets:
-                return ["iPod_Control/iTunes/Equalizer Presets"]
-            case .artworkDB:
-                return ["iPod_Control/Artwork/ArtworkDB"]
-            case .photoDB:
-                return ["Photos/Photo Database"]
-            case .iTunesSD:
-                return ["iTunesSD"]
-            case .iTunesStats:
-                return ["iTunesStats"]
-            case .iTunesShuffle:
-                return ["iTunesShuffle"]
-            case .iTunesPState:
-                return ["iTunesPState"]
-            }
+
+    /// Initialize with a SQLite Library.itdb file.
+    /// - Parameter libraryPath: URL to a Library.itdb file.
+    /// - Throws: Parsing or file reading errors.
+    convenience init(libraryPath: URL) throws {
+        try self.init(iPodPath: Self.basePath(for: libraryPath, relativePath: "iPod_Control/iTunes/iTunes Library.itlp/Library.itdb"))
+
+        if iTunesLibrary == nil {
+            let dynamicPath = libraryPath.deletingLastPathComponent().appendingPathComponent("Dynamic.itdb")
+            iTunesLibrary = try iTunesLibraryReader(libraryPath: libraryPath, dynamicPath: dynamicPath)
+            deviceType = .sqliteLibrary
+            loadOptionalDatabase(.artworkDB, as: ArtworkDatabase.self) { artworkDB = $0 }
         }
     }
     
@@ -230,6 +205,14 @@ internal class iPodDBReader {
                 return fullPath
             }
         }
+
+        for fileName in type.fileNames {
+            let fullPath = URL(fileURLWithPath: basePath).appendingPathComponent(fileName).path
+            if FileManager.default.fileExists(atPath: fullPath) {
+                return fullPath
+            }
+        }
+
         return nil
     }
     
@@ -252,10 +235,7 @@ internal class iPodDBReader {
     private func loadSQLiteLibraryFiles() throws {
         iTunesLibrary = try iTunesLibraryReader(iPodPath: basePath)
 
-        loadOptionalFile(.artworkDB) { path in
-            artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-
+        loadOptionalDatabase(.artworkDB, as: ArtworkDatabase.self) { artworkDB = $0 }
     }
 
     private func loadStandardFiles() throws {
@@ -265,22 +245,10 @@ internal class iPodDBReader {
         }
 
         // Load optional files
-        loadOptionalFile(.playCounts) { path in
-            playCountsDB = try PlayCounts(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-
-        loadOptionalFile(.otgPlaylist) { path in
-            otgPlaylist = try OTGPlaylist(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-
-        loadOptionalFile(.equalizerPresets) { path in
-            equalizerPresets = try EqualizerPresets(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-
-        loadOptionalFile(.artworkDB) { path in
-            artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-
+        loadOptionalDatabase(.playCounts, as: PlayCounts.self) { playCountsDB = $0 }
+        loadOptionalDatabase(.otgPlaylist, as: OTGPlaylist.self) { otgPlaylist = $0 }
+        loadOptionalDatabase(.equalizerPresets, as: EqualizerPresets.self) { equalizerPresets = $0 }
+        loadOptionalDatabase(.artworkDB, as: ArtworkDatabase.self) { artworkDB = $0 }
     }
     
     private func loadShuffleFiles() throws {
@@ -290,17 +258,9 @@ internal class iPodDBReader {
         }
         
         // Load optional Shuffle files
-        loadOptionalFile(.iTunesStats) { path in
-            shuffleStats = try iTunesStats(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-        
-        loadOptionalFile(.iTunesShuffle) { path in
-            shuffleOrder = try iTunesShuffle(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-        
-        loadOptionalFile(.iTunesPState) { path in
-            playbackState = try iTunesPState(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
+        loadOptionalDatabase(.iTunesStats, as: iTunesStats.self) { shuffleStats = $0 }
+        loadOptionalDatabase(.iTunesShuffle, as: iTunesShuffle.self) { shuffleOrder = $0 }
+        loadOptionalDatabase(.iTunesPState, as: iTunesPState.self) { playbackState = $0 }
     }
     
     private func loadPhotoFiles() throws {
@@ -308,13 +268,7 @@ internal class iPodDBReader {
         try loadStandardFiles()
         
         // Load photo-specific files
-        loadOptionalFile(.artworkDB) { path in
-            artworkDB = try ArtworkDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
-        
-        loadOptionalFile(.photoDB) { path in
-            photoDB = try PhotoDatabase(from: Data(contentsOf: URL(fileURLWithPath: path)))
-        }
+        loadOptionalDatabase(.photoDB, as: PhotoDatabase.self) { photoDB = $0 }
     }
     
     private func loadAvailableFiles() throws {
@@ -331,8 +285,24 @@ internal class iPodDBReader {
         do {
             try loader(path)
         } catch {
-            // Silently ignore - optional files may not exist or may be corrupt
-            // This is non-fatal and the reader will continue with available data
+            os_log(
+                "Could not load optional database %{public}@: %{public}@",
+                log: optionalDatabaseLog,
+                type: .info,
+                type.rawValue,
+                error.localizedDescription
+            )
+        }
+    }
+
+    private func loadOptionalDatabase<T: IPKParseable>(
+        _ type: DatabaseFileType,
+        as _: T.Type,
+        assign: (T) -> Void
+    ) {
+        loadOptionalFile(type) { path in
+            let data = try Data(contentsOf: URL(fileURLWithPath: path))
+            assign(try T(from: data))
         }
     }
     
@@ -361,6 +331,40 @@ internal class iPodDBReader {
         case .iTunesPState:
             playbackState = try iTunesPState(from: data)
         }
+    }
+}
+
+// MARK: - Path Resolution
+
+private extension iPodDBReader {
+
+    static func basePath(for fileURL: URL, fileType: DatabaseFileType) -> String {
+        for relativePath in fileType.standardPaths {
+            if let basePath = inferredBasePath(for: fileURL, relativePath: relativePath) {
+                return basePath
+            }
+        }
+
+        return fileURL.deletingLastPathComponent().path
+    }
+
+    static func basePath(for fileURL: URL, relativePath: String) -> String {
+        if let basePath = inferredBasePath(for: fileURL, relativePath: relativePath) {
+            return basePath
+        }
+
+        return fileURL.deletingLastPathComponent().path
+    }
+
+    static func inferredBasePath(for fileURL: URL, relativePath: String) -> String? {
+        let suffix = "/" + relativePath
+        let path = fileURL.standardizedFileURL.path
+
+        guard path.hasSuffix(suffix) else {
+            return nil
+        }
+
+        return String(path.dropLast(suffix.count))
     }
 }
 

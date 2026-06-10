@@ -40,19 +40,45 @@ private func cleanupMockiPodDirectory(_ url: URL) {
     try? FileManager.default.removeItem(at: url)
 }
 
-// MARK: - URL Initializer Tests
+// MARK: - Initializer Tests
 
-@Test func testiPodInitWithURL() async throws {
+@Test func testiPodInitWithContentsOfURL() async throws {
     let mockiPodURL = try createMockiPodDirectory()
     defer { cleanupMockiPodDirectory(mockiPodURL) }
 
-    let ipod = try iPod(url: mockiPodURL)
+    let ipod = try iPod(contentsOf: mockiPodURL)
 
     #expect(ipod.url == mockiPodURL, "iPod URL should match input URL")
-    #expect(!ipod.tracks.isEmpty, "iPod should have tracks")
+    #expect(ipod.tracks.isEmpty == false, "iPod should have tracks")
 
-    print("✅ iPod init(url:) test passed")
+    print("✅ iPod init(contentsOf:) test passed")
     print("   - Tracks: \(ipod.tracks.count)")
+}
+
+@Test func testiPodInitWithDatabaseFileURL() async throws {
+    let databaseURL = try #require(Bundle.module.url(forResource: "iTunesDB", withExtension: nil, subdirectory: "Resources"))
+
+    let ipod = try iPod(contentsOf: databaseURL)
+
+    #expect(ipod.url == databaseURL, "iPod URL should match input URL")
+    #expect(ipod.tracks.isEmpty == false, "iPod should have tracks")
+}
+
+@Test func testiPodInitWithMissingURLThrowsPublicError() async throws {
+    let missingURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("iPodKitTests-Missing-\(UUID().uuidString)")
+
+    do {
+        _ = try iPod(contentsOf: missingURL)
+        Issue.record("Expected iPod(contentsOf:) to throw")
+    } catch {
+        if case .invalidPath = error {
+            #expect(error.recoverySuggestion != nil)
+            #expect(error.localizedDescription.contains(missingURL.path) == false)
+        } else {
+            Issue.record("Expected invalidPath, got \(error)")
+        }
+    }
 }
 
 // MARK: - Track Data Tests
@@ -61,11 +87,11 @@ private func cleanupMockiPodDirectory(_ url: URL) {
     let mockiPodURL = try createMockiPodDirectory()
     defer { cleanupMockiPodDirectory(mockiPodURL) }
 
-    let ipod = try iPod(url: mockiPodURL)
+    let ipod = try iPod(contentsOf: mockiPodURL)
 
-    #expect(!ipod.tracks.isEmpty, "Should have tracks")
+    #expect(ipod.tracks.isEmpty == false, "Should have tracks")
 
-    let firstTrack = ipod.tracks[0]
+    let firstTrack = try #require(ipod.tracks.first)
 
     #expect(firstTrack.id > 0, "Track should have valid ID")
     #expect(firstTrack.duration > 0, "Track should have duration")
@@ -77,11 +103,23 @@ private func cleanupMockiPodDirectory(_ url: URL) {
     print("   - Artist: \(firstTrack.artist ?? "Unknown")")
 }
 
+@Test func testiPodPlaylistsExposeResolvedTracks() async throws {
+    let mockiPodURL = try createMockiPodDirectory()
+    defer { cleanupMockiPodDirectory(mockiPodURL) }
+
+    let ipod = try iPod(contentsOf: mockiPodURL)
+    let masterPlaylist = try #require(ipod.playlists.first { $0.isMasterPlaylist })
+
+    #expect(masterPlaylist.tracks.count == ipod.tracks.count, "Master playlist should resolve every track")
+    #expect(masterPlaylist.trackCount == masterPlaylist.tracks.count)
+    #expect(masterPlaylist.trackIds == masterPlaylist.tracks.map(\.id))
+}
+
 @Test func testiPodTrackPlayCountMerging() async throws {
     let mockiPodURL = try createMockiPodDirectory()
     defer { cleanupMockiPodDirectory(mockiPodURL) }
 
-    let ipod = try iPod(url: mockiPodURL)
+    let ipod = try iPod(contentsOf: mockiPodURL)
 
     let playedTracks = ipod.tracks.filter { $0.playCount > 0 }
 
@@ -102,7 +140,7 @@ private func cleanupMockiPodDirectory(_ url: URL) {
     try FileManager.default.createDirectory(at: emptyDir, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: emptyDir) }
 
-    let ipod = try iPod(url: emptyDir)
+    let ipod = try iPod(contentsOf: emptyDir)
 
     #expect(ipod.tracks.isEmpty, "Empty directory should have no tracks")
 
@@ -121,9 +159,9 @@ private func cleanupMockiPodDirectory(_ url: URL) {
         try FileManager.default.copyItem(at: iTunesDBURL, to: destURL)
     }
 
-    let ipod = try iPod(url: partialDir)
+    let ipod = try iPod(contentsOf: partialDir)
 
-    #expect(!ipod.tracks.isEmpty, "Should have tracks from iTunesDB")
+    #expect(ipod.tracks.isEmpty == false, "Should have tracks from iTunesDB")
 
     print("✅ Partial data test passed")
     print("   - Tracks: \(ipod.tracks.count)")

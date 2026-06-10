@@ -30,14 +30,14 @@ internal struct ITDBPlaylist: IPKParseable, Sendable {
     init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhyp")
 
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        self.dataObjectChildCount = try Self.DataObjectChildCount().readUInt32(from: data)
-        self.playlistItemCount = try Self.PlaylistItemCount().readUInt32(from: data)
-        self.isMasterPlaylist = try Self.IsMasterPlaylistFlag().readUInt8(from: data) == 1
-        self.isPodcast = try Self.PodcastFlag().readUInt16(from: data) == 1
-        self.timestamp = try Self.Timestamp().readUInt32(from: data)
-        self.persistentPlaylistId = try Self.PersistentPlaylistId().readUInt64(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.totalLength = try Self.totalLengthField.readUInt32(from: data)
+        self.dataObjectChildCount = try Self.dataObjectChildCountField.readUInt32(from: data)
+        self.playlistItemCount = try Self.playlistItemCountField.readUInt32(from: data)
+        self.isMasterPlaylist = try Self.isMasterPlaylistFlagField.readUInt8(from: data) == 1
+        self.isPodcast = try Self.podcastFlagField.readUInt16(from: data) == 1
+        self.timestamp = try Self.timestampField.readUInt32(from: data)
+        self.persistentPlaylistId = try Self.persistentPlaylistIdField.readUInt64(from: data)
 
         // Parse child objects (mhod for name, mhip for track items)
         var parsedName: String? = nil
@@ -76,8 +76,8 @@ internal struct ITDBPlaylist: IPKParseable, Sendable {
             if childData.count >= 4,
                String(data: childData.subdata(in: 0..<4), encoding: .ascii) == "mhip" {
                 // Parse mhip to get track ID
-                let itemTotalLength = try ITDBPlaylistItem.TotalLength().readUInt32(from: childData)
-                let trackId = try ITDBPlaylistItem.TrackId().readUInt32(from: childData)
+                let itemTotalLength = try ITDBPlaylistItem.totalLengthField.readUInt32(from: childData)
+                let trackId = try ITDBPlaylistItem.trackIdField.readUInt32(from: childData)
                 parsedTrackIds.append(trackId)
 
                 offset += Int(itemTotalLength)
@@ -91,48 +91,17 @@ internal struct ITDBPlaylist: IPKParseable, Sendable {
     }
 
     func getTotalLength(from data: Data) throws -> UInt32 {
-        return try Self.TotalLength().readUInt32(from: data)
+        return try Self.totalLengthField.readUInt32(from: data)
     }
 }
 
 extension ITDBPlaylist {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct DataObjectChildCount: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
-    
-    struct PlaylistItemCount: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-    }
-    
-    struct IsMasterPlaylistFlag: IPKField {
-        var offset: Int { 20 }
-        var length: Int { 1 }
-    }
-    
-    struct Timestamp: IPKField {
-        var offset: Int { 24 }
-        var length: Int { 4 }
-    }
-    
-    struct PersistentPlaylistId: IPKField {
-        var offset: Int { 28 }
-        var length: Int { 8 }
-    }
-    
-    struct PodcastFlag: IPKField {
-        var offset: Int { 42 }
-        var length: Int { 2 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let dataObjectChildCountField = IPKBinaryField(offset: 12, length: 4)
+    static let playlistItemCountField = IPKBinaryField(offset: 16, length: 4)
+    static let isMasterPlaylistFlagField = IPKBinaryField(offset: 20, length: 1)
+    static let timestampField = IPKBinaryField(offset: 24, length: 4)
+    static let persistentPlaylistIdField = IPKBinaryField(offset: 28, length: 8)
+    static let podcastFlagField = IPKBinaryField(offset: 42, length: 2)
 }

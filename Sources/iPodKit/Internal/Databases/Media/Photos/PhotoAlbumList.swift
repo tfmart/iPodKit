@@ -16,9 +16,9 @@ internal struct PhotoAlbumList: IPKParseable, Sendable {
     init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhla")
         
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        self.numberOfAlbums = try Self.NumberOfAlbums().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.totalLength = try Self.totalLengthField.readUInt32(from: data)
+        self.numberOfAlbums = try Self.numberOfAlbumsField.readUInt32(from: data)
         
         var albums: [PhotoAlbum] = []
         var offset = Int(headerLength)
@@ -38,18 +38,7 @@ internal struct PhotoAlbumList: IPKParseable, Sendable {
 }
 
 extension PhotoAlbumList {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct NumberOfAlbums: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let numberOfAlbumsField = IPKBinaryField(offset: 12, length: 4)
 }

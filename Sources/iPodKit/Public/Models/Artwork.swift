@@ -8,72 +8,122 @@
 import Foundation
 import CoreGraphics
 
-/// Album artwork associated with a track.
+/// Artwork associated with a track.
 ///
-/// iPods store artwork in a dedicated database with multiple thumbnail sizes.
-/// Call ``loadImage(width:height:)`` with no arguments to get the largest
-/// available size, or pass specific dimensions to request a particular resolution.
+/// ## Overview
+///
+/// Access artwork through ``Track/artwork``. Use ``sizes`` to inspect the
+/// thumbnail sizes stored for the track.
 ///
 /// ```swift
 /// if let artwork = track.artwork {
-///     let largest = try artwork.loadImage()
-///     let small   = try artwork.loadImage(width: 56, height: 56)
+///     print(artwork.sizes)
 /// }
 /// ```
 ///
-/// > Note: Artwork loading reads from the iPod's filesystem. The iPod must
-/// > still be mounted at its original path for image loading to succeed.
+/// Call ``image(size:)`` with no arguments to load the largest available image:
+///
+/// ```swift
+/// if let artwork = track.artwork {
+///     let image = try await artwork.image()
+///     print("Artwork size: \(image.width)x\(image.height)")
+/// }
+/// ```
+///
+/// Request a specific thumbnail by passing one of the available sizes:
+///
+/// ```swift
+/// if let artwork = track.artwork,
+///    let size = artwork.sizes.first {
+///     let image = try await artwork.image(size: size)
+/// }
+/// ```
 ///
 /// ## Topics
 ///
 /// ### Available Sizes
+/// - ``Size``
 /// - ``sizes``
 ///
 /// ### Loading Images
-/// - ``loadImage(width:height:)``
+/// - ``image(size:)``
 public struct Artwork: Sendable {
 
-    /// Available thumbnail sizes as (width, height) pairs in pixels.
+    /// Available thumbnail sizes in pixels.
     ///
     /// iPods typically store artwork at multiple resolutions (e.g., 56x56,
     /// 140x140). Check this array to see what sizes are available before
-    /// requesting a specific size with ``loadImage(width:height:)``.
-    public let sizes: [(width: Int, height: Int)]
+    /// requesting a specific size with ``image(size:)``.
+    public let sizes: [Size]
 
     private let iPodURL: URL
     private let thumbnails: [ArtworkThumbnail]
 
     internal init(from imageItem: ArtworkImageItem, iPodURL: URL) {
-        self.sizes = imageItem.thumbnails.map { (Int($0.imageWidth), Int($0.imageHeight)) }
+        self.sizes = imageItem.thumbnails.map { Size(width: Int($0.imageWidth), height: Int($0.imageHeight)) }
         self.iPodURL = iPodURL
         self.thumbnails = imageItem.thumbnails
     }
 
-    /// Load the artwork image.
+    /// Loads an artwork image.
     ///
-    /// When called without arguments, returns the largest available resolution.
-    /// Pass specific dimensions to request a particular thumbnail size — use
-    /// ``sizes`` to discover what's available.
+    /// When `size` is `nil`, this method returns the largest available image.
     ///
-    /// - Parameters:
-    ///   - width: Desired image width in pixels, or `nil` for the largest available.
-    ///   - height: Desired image height in pixels, or `nil` for the largest available.
+    /// - Parameter size: Desired thumbnail size in pixels, or `nil` for the largest available image.
     /// - Returns: A `CGImage` decoded from the iPod's artwork database.
-    /// - Throws: ``IPKError/artworkNotFound`` if no thumbnail matches the requested size.
-    /// - Throws: ``IPKError/artworkDecodingFailed`` if the image data cannot be decoded.
-    public func loadImage(width: Int? = nil, height: Int? = nil) throws -> CGImage {
+    /// - Throws: ``iPodError/artworkNotFound`` if no thumbnail matches the requested size.
+    /// - Throws: ``iPodError/artworkDecodingFailed`` if the image data cannot be decoded.
+    public func image(size: Size? = nil) async throws(iPodError) -> CGImage {
+        try Self.checkCancellation()
+
+        let thumbnail = try thumbnail(for: size)
+        let iPodURL = iPodURL
+        // Untyped throws: a typed-throws closure here crashes the Swift 6 compiler during IR generation.
+        let task = Task.detached(priority: Task.currentPriority) { () throws -> CGImage in
+            try Self.checkCancellation()
+            let image = try ArtworkDecoder.image(from: thumbnail, iPodURL: iPodURL)
+            try Self.checkCancellation()
+            return image
+        }
+
+        do {
+            return try await withTaskCancellationHandler(
+                operation: {
+                    try await task.value
+                },
+                onCancel: {
+                    task.cancel()
+                }
+            )
+        } catch let error as iPodError {
+            throw error
+        } catch {
+            throw iPodError.cancelled
+        }
+    }
+}
+
+private extension Artwork {
+
+    static func checkCancellation() throws(iPodError) {
+        if Task.isCancelled {
+            throw iPodError.cancelled
+        }
+    }
+
+    func thumbnail(for size: Size?) throws(iPodError) -> ArtworkThumbnail {
         let thumbnail: ArtworkThumbnail?
-        if let width, let height {
-            thumbnail = thumbnails.first(where: {
-                Int($0.imageWidth) == width && Int($0.imageHeight) == height
-            })
+        if let size {
+            thumbnail = thumbnails.first { thumbnail in
+                Int(thumbnail.imageWidth) == size.width && Int(thumbnail.imageHeight) == size.height
+            }
         } else {
-            thumbnail = thumbnails.max(by: { $0.pixelCount < $1.pixelCount })
+            thumbnail = thumbnails.max { $0.pixelCount < $1.pixelCount }
         }
 
         guard let thumbnail else {
-            throw IPKError.artworkNotFound
+            throw iPodError.artworkNotFound
         }
-        return try ArtworkDecoder.loadImage(from: thumbnail, iPodURL: iPodURL)
+        return thumbnail
     }
 }

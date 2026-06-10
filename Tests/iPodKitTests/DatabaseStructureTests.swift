@@ -1,3 +1,10 @@
+//
+//  DatabaseStructureTests.swift
+//  iPodKit
+//
+//  Created by Tomas Martins on 11/02/25.
+//
+
 import Testing
 import Foundation
 @testable import iPodKit
@@ -115,7 +122,7 @@ import Foundation
     #expect(artworkDB.imageItems.count >= 0, "Should have valid image items count")
 
     // Test image item structure if any images exist
-    if !artworkDB.imageItems.isEmpty {
+    if artworkDB.imageItems.isEmpty == false {
         let firstImage = artworkDB.imageItems[0]
         #expect(firstImage.headerLength > 0, "Image item should have valid header")
         #expect(firstImage.totalLength > 0, "Image item should have valid total length")
@@ -260,21 +267,17 @@ import Foundation
 
         // Test display name logic
         let displayName = track.displayName
-        #expect(!displayName.isEmpty, "Display name should never be empty")
+        #expect(displayName.isEmpty == false, "Display name should never be empty")
     }
 
-    // Note: Test iTunesDB file has known encoding artifacts in some tracks
-    // This is expected behavior for certain iPod database versions
-    // The important thing is that tracks are being parsed and have metadata
     #expect(tracksWithTitle > 0, "Should parse some tracks with titles")
     #expect(tracksWithArtist > 0, "Should parse some tracks with artists")
+    #expect(tracksWithNullChars == 0, "Parsed metadata should not contain null characters")
 
     print("✅ String metadata parsing validated")
     print("   - Tracks with title: \(tracksWithTitle)")
     print("   - Tracks with artist: \(tracksWithArtist)")
     print("   - Tracks with album: \(tracksWithAlbum)")
     print("   - Tracks with genre: \(tracksWithGenre)")
-    if tracksWithNullChars > 0 {
-        print("   - Tracks with null char artifacts: \(tracksWithNullChars)")
-    }
+    print("   - Tracks with null char artifacts: \(tracksWithNullChars)")
 }

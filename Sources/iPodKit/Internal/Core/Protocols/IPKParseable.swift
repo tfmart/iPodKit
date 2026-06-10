@@ -1,5 +1,5 @@
 //
-//  IPKObject.swift
+//  IPKParseable.swift
 //  iPodKit
 //
 //  Created by Tomas Martins on 10/02/25.

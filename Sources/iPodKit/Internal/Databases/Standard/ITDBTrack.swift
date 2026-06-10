@@ -73,76 +73,76 @@ import Foundation
 /// Reference: [iTunes Database Track Item Specification](http://www.ipodlinux.org/ITunesDB/#Track_Item)
 internal struct ITDBTrack: IPKParseable, Sendable {
     // Binary fields
-    public let headerLength: UInt32
-    public let totalLength: UInt32
-    public let numberOfStrings: UInt32
-    public let uniqueId: UInt32
-    public let visible: UInt32
-    public let compilationFlag: UInt8
-    public let rating: UInt8
-    public let lastModified: UInt32
-    public let size: UInt32
-    public let length: UInt32
-    public let trackNumber: UInt32
-    public let totalTracks: UInt32
-    public let year: UInt32
-    public let bitrate: UInt32
-    public let sampleRate: UInt32
-    public let volumeAdjustment: Int32
-    public let startTime: UInt32
-    public let stopTime: UInt32
-    public let soundCheck: UInt32
-    public let playCount: UInt32
-    public let lastPlayed: UInt32
-    public let discNumber: UInt32
-    public let totalDiscs: UInt32
-    public let dateAdded: UInt32
-    public let dbid: UInt64
-    public let bpm: UInt16
-    public let mediaType: UInt32
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let numberOfStrings: UInt32
+    let uniqueId: UInt32
+    let visible: UInt32
+    let compilationFlag: UInt8
+    let rating: UInt8
+    let lastModified: UInt32
+    let size: UInt32
+    let length: UInt32
+    let trackNumber: UInt32
+    let totalTracks: UInt32
+    let year: UInt32
+    let bitrate: UInt32
+    let sampleRate: UInt32
+    let volumeAdjustment: Int32
+    let startTime: UInt32
+    let stopTime: UInt32
+    let soundCheck: UInt32
+    let playCount: UInt32
+    let lastPlayed: UInt32
+    let discNumber: UInt32
+    let totalDiscs: UInt32
+    let dateAdded: UInt32
+    let dbid: UInt64
+    let bpm: UInt16
+    let mediaType: UInt32
 
     // Parsed string metadata
-    public let title: String?
-    public let location: String?
-    public let album: String?
-    public let artist: String?
-    public let genre: String?
-    public let comment: String?
-    public let composer: String?
-    public let grouping: String?
+    let title: String?
+    let location: String?
+    let album: String?
+    let artist: String?
+    let genre: String?
+    let comment: String?
+    let composer: String?
+    let grouping: String?
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhit")
 
         // Parse binary fields
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        self.numberOfStrings = try Self.Strings().readUInt32(from: data)
-        self.uniqueId = try Self.Identifier().readUInt32(from: data)
-        self.visible = try Self.Visible().readUInt32(from: data)
-        _ = try Self.FileType().readUInt32(from: data)
-        self.compilationFlag = try Self.CompilationFlag().readUInt8(from: data)
-        self.rating = try Self.Rating().readUInt8(from: data)
-        self.lastModified = try Self.LastModified().readUInt32(from: data)
-        self.size = try Self.Size().readUInt32(from: data)
-        self.length = try Self.Length().readUInt32(from: data)
-        self.trackNumber = try Self.TrackNumber().readUInt32(from: data)
-        self.totalTracks = try Self.TotalTracks().readUInt32(from: data)
-        self.year = try Self.Year().readUInt32(from: data)
-        self.bitrate = try Self.Bitrate().readUInt32(from: data)
-        self.sampleRate = try Self.SampleRate().readUInt32(from: data)
-        self.volumeAdjustment = try Self.VolumeAdjustment().readInt32(from: data)
-        self.startTime = try Self.StartTime().readUInt32(from: data)
-        self.stopTime = try Self.StopTime().readUInt32(from: data)
-        self.soundCheck = try Self.SoundCheck().readUInt32(from: data)
-        self.playCount = try Self.PlayCount().readUInt32(from: data)
-        self.lastPlayed = try Self.LastPlayed().readUInt32(from: data)
-        self.discNumber = try Self.DiscNumber().readUInt32(from: data)
-        self.totalDiscs = try Self.TotalDiscs().readUInt32(from: data)
-        self.dateAdded = try Self.DateAdded().readUInt32(from: data)
-        self.dbid = try Self.DBID().readUInt64(from: data)
-        self.bpm = try Self.BPM().readUInt16(from: data)
-        self.mediaType = try Self.MediaType().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.totalLength = try Self.totalLengthField.readUInt32(from: data)
+        self.numberOfStrings = try Self.stringsField.readUInt32(from: data)
+        self.uniqueId = try Self.identifierField.readUInt32(from: data)
+        self.visible = try Self.visibleField.readUInt32(from: data)
+        _ = try Self.fileTypeField.readUInt32(from: data)
+        self.compilationFlag = try Self.compilationFlagField.readUInt8(from: data)
+        self.rating = try Self.ratingField.readUInt8(from: data)
+        self.lastModified = try Self.lastModifiedField.readUInt32(from: data)
+        self.size = try Self.sizeField.readUInt32(from: data)
+        self.length = try Self.lengthField.readUInt32(from: data)
+        self.trackNumber = try Self.trackNumberField.readUInt32(from: data)
+        self.totalTracks = try Self.totalTracksField.readUInt32(from: data)
+        self.year = try Self.yearField.readUInt32(from: data)
+        self.bitrate = try Self.bitrateField.readUInt32(from: data)
+        self.sampleRate = try Self.sampleRateField.readUInt32(from: data)
+        self.volumeAdjustment = try Self.volumeAdjustmentField.readInt32(from: data)
+        self.startTime = try Self.startTimeField.readUInt32(from: data)
+        self.stopTime = try Self.stopTimeField.readUInt32(from: data)
+        self.soundCheck = try Self.soundCheckField.readUInt32(from: data)
+        self.playCount = try Self.playCountField.readUInt32(from: data)
+        self.lastPlayed = try Self.lastPlayedField.readUInt32(from: data)
+        self.discNumber = try Self.discNumberField.readUInt32(from: data)
+        self.totalDiscs = try Self.totalDiscsField.readUInt32(from: data)
+        self.dateAdded = try Self.dateAddedField.readUInt32(from: data)
+        self.dbid = try Self.dbidField.readUInt64(from: data)
+        self.bpm = try Self.bpmField.readUInt16(from: data)
+        self.mediaType = try Self.mediaTypeField.readUInt32(from: data)
 
         // Parse string metadata objects
         var stringMetadata: [ITDBDataObject.TypeIdentifier: String] = [:]
@@ -259,160 +259,35 @@ extension ITDBTrack {
         compilationFlag == 1
     }
 
-    /// Start time in seconds (custom playback start point)
-    var startTimeInSeconds: TimeInterval {
-        TimeInterval(startTime) / 1000.0
-    }
-
-    /// Stop time in seconds (custom playback end point, 0 means play to end)
-    var stopTimeInSeconds: TimeInterval {
-        TimeInterval(stopTime) / 1000.0
-    }
-
-    /// Volume adjustment in decibels (-100% to +100% maps to -255 to +255)
-    var volumeAdjustmentPercent: Int {
-        Int(volumeAdjustment) * 100 / 255
-    }
 }
 
 extension ITDBTrack {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-
-    struct Strings: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
-
-    struct Identifier: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-    }
-
-    struct Visible: IPKField {
-        var offset: Int { 20 }
-        var length: Int { 4 }
-    }
-
-    struct FileType: IPKField {
-        var offset: Int { 24 }
-        var length: Int { 4 }
-    }
-
-    struct CompilationFlag: IPKField {
-        var offset: Int { 30 }
-        var length: Int { 1 }
-    }
-
-    struct Rating: IPKField {
-        var offset: Int { 31 }
-        var length: Int { 1 }
-    }
-
-    struct LastModified: IPKField {
-        var offset: Int { 32 }
-        var length: Int { 4 }
-    }
-
-    struct Size: IPKField {
-        var offset: Int { 36 }
-        var length: Int { 4 }
-    }
-
-    struct Length: IPKField {
-        var offset: Int { 40 }
-        var length: Int { 4 }
-    }
-
-    struct TrackNumber: IPKField {
-        var offset: Int { 44 }
-        var length: Int { 4 }
-    }
-
-    struct TotalTracks: IPKField {
-        var offset: Int { 48 }
-        var length: Int { 4 }
-    }
-
-    struct Year: IPKField {
-        var offset: Int { 52 }
-        var length: Int { 4 }
-    }
-
-    struct Bitrate: IPKField {
-        var offset: Int { 56 }
-        var length: Int { 4 }
-    }
-
-    struct SampleRate: IPKField {
-        var offset: Int { 60 }
-        var length: Int { 4 }
-    }
-
-    struct VolumeAdjustment: IPKField {
-        var offset: Int { 64 }
-        var length: Int { 4 }
-    }
-
-    struct StartTime: IPKField {
-        var offset: Int { 68 }
-        var length: Int { 4 }
-    }
-
-    struct StopTime: IPKField {
-        var offset: Int { 72 }
-        var length: Int { 4 }
-    }
-
-    struct SoundCheck: IPKField {
-        var offset: Int { 76 }
-        var length: Int { 4 }
-    }
-
-    struct PlayCount: IPKField {
-        var offset: Int { 80 }
-        var length: Int { 4 }
-    }
-
-    struct LastPlayed: IPKField {
-        var offset: Int { 88 }
-        var length: Int { 4 }
-    }
-
-    struct DiscNumber: IPKField {
-        var offset: Int { 92 }
-        var length: Int { 4 }
-    }
-
-    struct TotalDiscs: IPKField {
-        var offset: Int { 96 }
-        var length: Int { 4 }
-    }
-
-    struct DateAdded: IPKField {
-        var offset: Int { 104 }
-        var length: Int { 4 }
-    }
-
-    struct DBID: IPKField {
-        var offset: Int { 112 }
-        var length: Int { 8 }
-    }
-
-    struct BPM: IPKField {
-        var offset: Int { 122 }
-        var length: Int { 2 }
-    }
-
-    struct MediaType: IPKField {
-        var offset: Int { 208 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let stringsField = IPKBinaryField(offset: 12, length: 4)
+    static let identifierField = IPKBinaryField(offset: 16, length: 4)
+    static let visibleField = IPKBinaryField(offset: 20, length: 4)
+    static let fileTypeField = IPKBinaryField(offset: 24, length: 4)
+    static let compilationFlagField = IPKBinaryField(offset: 30, length: 1)
+    static let ratingField = IPKBinaryField(offset: 31, length: 1)
+    static let lastModifiedField = IPKBinaryField(offset: 32, length: 4)
+    static let sizeField = IPKBinaryField(offset: 36, length: 4)
+    static let lengthField = IPKBinaryField(offset: 40, length: 4)
+    static let trackNumberField = IPKBinaryField(offset: 44, length: 4)
+    static let totalTracksField = IPKBinaryField(offset: 48, length: 4)
+    static let yearField = IPKBinaryField(offset: 52, length: 4)
+    static let bitrateField = IPKBinaryField(offset: 56, length: 4)
+    static let sampleRateField = IPKBinaryField(offset: 60, length: 4)
+    static let volumeAdjustmentField = IPKBinaryField(offset: 64, length: 4)
+    static let startTimeField = IPKBinaryField(offset: 68, length: 4)
+    static let stopTimeField = IPKBinaryField(offset: 72, length: 4)
+    static let soundCheckField = IPKBinaryField(offset: 76, length: 4)
+    static let playCountField = IPKBinaryField(offset: 80, length: 4)
+    static let lastPlayedField = IPKBinaryField(offset: 88, length: 4)
+    static let discNumberField = IPKBinaryField(offset: 92, length: 4)
+    static let totalDiscsField = IPKBinaryField(offset: 96, length: 4)
+    static let dateAddedField = IPKBinaryField(offset: 104, length: 4)
+    static let dbidField = IPKBinaryField(offset: 112, length: 8)
+    static let bpmField = IPKBinaryField(offset: 122, length: 2)
+    static let mediaTypeField = IPKBinaryField(offset: 208, length: 4)
 }

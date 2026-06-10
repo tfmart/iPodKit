@@ -15,20 +15,20 @@ import Foundation
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Play_Counts_File
 internal struct PlayCounts: IPKParseable, Sendable {
     // Binary fields
-    public let headerLength: UInt32
-    public let entryLength: UInt32
-    public let numberOfEntries: UInt32
+    let headerLength: UInt32
+    let entryLength: UInt32
+    let numberOfEntries: UInt32
     
     // Play count entries
-    public let entries: [PlayCountEntry]
+    let entries: [PlayCountEntry]
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhdp")
         
         // Parse header fields
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.entryLength = try Self.EntryLength().readUInt32(from: data)
-        self.numberOfEntries = try Self.NumberOfEntries().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.entryLength = try Self.entryLengthField.readUInt32(from: data)
+        self.numberOfEntries = try Self.numberOfEntriesField.readUInt32(from: data)
         
         // Parse entries
         var entries: [PlayCountEntry] = []
@@ -48,81 +48,7 @@ internal struct PlayCounts: IPKParseable, Sendable {
     }
 }
 
-// MARK: - Play Count Entry
-internal struct PlayCountEntry: IPKParseable, Sendable {
-    // Binary fields
-    public let playCount: UInt32
-    public let lastPlayed: UInt32
-    public let bookmarkTime: UInt32
-    public let rating: UInt32
-    public let skipCount: UInt32
-    public let lastSkipped: UInt32
-    
-    public init(from data: Data) throws {
-        // Note: Play count entries don't have magic numbers in some versions
-        // We'll read the fields directly
-        guard data.count >= 16 else {
-            throw IPKParsingError.insufficientData
-        }
-        
-        self.playCount = try data.readUInt32(at: 0)
-        self.lastPlayed = try data.readUInt32(at: 4)
-        self.bookmarkTime = try data.readUInt32(at: 8)
-        self.rating = try data.readUInt32(at: 12)
-        
-        // Skip count and last skipped are optional fields for newer firmware
-        if data.count >= 24 {
-            self.skipCount = try data.readUInt32(at: 20)
-            self.lastSkipped = try data.readUInt32(at: 24)
-        } else {
-            self.skipCount = 0
-            self.lastSkipped = 0
-        }
-    }
-}
-
-// MARK: - Convenience Properties
-extension PlayCountEntry {
-    /// Last played date converted from Mac epoch timestamp
-    var lastPlayedDate: Date? {
-        guard lastPlayed > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(lastPlayed) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
-    }
-    
-    /// Last skipped date converted from Mac epoch timestamp
-    var lastSkippedDate: Date? {
-        guard lastSkipped > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(lastSkipped) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
-    }
-    
-    /// Formatted last played date string
-    var lastPlayedFormatted: String {
-        guard let date = lastPlayedDate else { return "Never played" }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-    
-    /// Star rating (0-5)
-    var starRating: Int {
-        return Int(rating) / 20
-    }
-    
-    /// Bookmark time formatted as MM:SS
-    var bookmarkTimeFormatted: String {
-        let totalSeconds = Int(bookmarkTime / 1000)
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-}
-
-// MARK: - Public API
+// MARK: - Internal API
 extension PlayCounts {
     /// Get play count entry for a specific track by index
     /// - Parameter trackIndex: Zero-based track index
@@ -153,19 +79,9 @@ extension PlayCounts {
 }
 
 // MARK: - Field Definitions
+
 extension PlayCounts {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct EntryLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct NumberOfEntries: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let entryLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let numberOfEntriesField = IPKBinaryField(offset: 12, length: 4)
 }

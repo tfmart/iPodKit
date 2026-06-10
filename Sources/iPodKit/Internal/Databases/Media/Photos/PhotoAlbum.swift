@@ -9,21 +9,21 @@ import Foundation
 
 internal struct PhotoAlbum: IPKParseable, Sendable {
     let headerLength: UInt32
-    public let totalLength: UInt32
-    public let numberOfPhotos: UInt32
-    public let albumId: UInt32
-    public let nameLength: UInt32
-    public let name: String?
-    public let photoIds: [UInt32]
+    let totalLength: UInt32
+    let numberOfPhotos: UInt32
+    let albumId: UInt32
+    let nameLength: UInt32
+    let name: String?
+    let photoIds: [UInt32]
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhba")
         
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        self.numberOfPhotos = try Self.NumberOfPhotos().readUInt32(from: data)
-        self.albumId = try Self.AlbumId().readUInt32(from: data)
-        self.nameLength = try Self.NameLength().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.totalLength = try Self.totalLengthField.readUInt32(from: data)
+        self.numberOfPhotos = try Self.numberOfPhotosField.readUInt32(from: data)
+        self.albumId = try Self.albumIdField.readUInt32(from: data)
+        self.nameLength = try Self.nameLengthField.readUInt32(from: data)
         
         // Read album name if present
         var nameOffset = 24
@@ -50,28 +50,9 @@ internal struct PhotoAlbum: IPKParseable, Sendable {
 }
 
 extension PhotoAlbum {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct NumberOfPhotos: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
-    
-    struct AlbumId: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-    }
-    
-    struct NameLength: IPKField {
-        var offset: Int { 20 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let numberOfPhotosField = IPKBinaryField(offset: 12, length: 4)
+    static let albumIdField = IPKBinaryField(offset: 16, length: 4)
+    static let nameLengthField = IPKBinaryField(offset: 20, length: 4)
 }

@@ -10,16 +10,22 @@ import CoreGraphics
 
 internal enum ArtworkDecoder {
 
-    static func loadImage(from thumbnail: ArtworkThumbnail, iPodURL: URL) throws -> CGImage {
+    static func image(from thumbnail: ArtworkThumbnail, iPodURL: URL) throws(iPodError) -> CGImage {
         let artworkPath = iPodURL.appendingPathComponent("iPod_Control/Artwork")
         let ithmbPath = artworkPath.appendingPathComponent(thumbnail.ithmbFilename)
 
-        let fileData = try Data(contentsOf: ithmbPath)
+        let fileData: Data
+        do {
+            fileData = try Data(contentsOf: ithmbPath)
+        } catch {
+            throw iPodError.artworkNotFound
+        }
+
         let offset = Int(thumbnail.ithmbOffset)
         let size = Int(thumbnail.imageSize)
 
         guard offset + size <= fileData.count else {
-            throw IPKError.artworkNotFound
+            throw iPodError.artworkNotFound
         }
 
         let rawData = fileData.subdata(in: offset..<(offset + size))
@@ -31,7 +37,7 @@ internal enum ArtworkDecoder {
         )
     }
 
-    private static func decodeRGB565(data: Data, width: Int, height: Int) throws -> CGImage {
+    private static func decodeRGB565(data: Data, width: Int, height: Int) throws(iPodError) -> CGImage {
         let pixelCount = width * height
         var rgbaData = [UInt8](repeating: 255, count: pixelCount * 4)
 
@@ -64,7 +70,7 @@ internal enum ArtworkDecoder {
                   shouldInterpolate: true,
                   intent: .defaultIntent
               ) else {
-            throw IPKError.artworkDecodingFailed
+            throw iPodError.artworkDecodingFailed
         }
 
         return image

@@ -1,3 +1,10 @@
+//
+//  iPodKitTests.swift
+//  iPodKit
+//
+//  Created by Tomas Martins on 10/02/25.
+//
+
 import Testing
 import Foundation
 @testable import iPodKit
@@ -6,13 +13,8 @@ import Foundation
 
 @Test func testIPKFieldProtocol() async throws {
     // Test the IPKField protocol with mock data
-    struct TestField: IPKField {
-        var offset: Int { 0 }
-        var length: Int { 4 }
-    }
-    
     let data = Data([0x12, 0x34, 0x56, 0x78])
-    let field = TestField()
+    let field = IPKBinaryField(offset: 0, length: 4)
     
     let value = try field.readUInt32(from: data)
     #expect(value == 0x78563412) // Little-endian
@@ -20,43 +22,17 @@ import Foundation
 
 @Test func testIPKFieldDifferentDataTypes() async throws {
     let data = Data([0x12, 0x34, 0x56, 0x78, 0xAB, 0xCD, 0xEF, 0x00])
-    
-    struct UInt8Field: IPKField {
-        var offset: Int { 0 }
-        var length: Int { 1 }
-    }
-    
-    struct UInt16Field: IPKField {
-        var offset: Int { 0 }
-        var length: Int { 2 }
-    }
-    
-    struct UInt32Field: IPKField {
-        var offset: Int { 0 }
-        var length: Int { 4 }
-    }
-    
-    struct UInt64Field: IPKField {
-        var offset: Int { 0 }
-        var length: Int { 8 }
-    }
-    
-    #expect(try UInt8Field().readUInt8(from: data) == 0x12)
-    #expect(try UInt16Field().readUInt16(from: data) == 0x3412)
-    #expect(try UInt32Field().readUInt32(from: data) == 0x78563412)
-    #expect(try UInt64Field().readUInt64(from: data) == 0x00EFCDAB78563412)
+
+    #expect(try IPKBinaryField(offset: 0, length: 1).readUInt8(from: data) == 0x12)
+    #expect(try IPKBinaryField(offset: 0, length: 2).readUInt16(from: data) == 0x3412)
+    #expect(try IPKBinaryField(offset: 0, length: 4).readUInt32(from: data) == 0x78563412)
+    #expect(try IPKBinaryField(offset: 0, length: 8).readUInt64(from: data) == 0x00EFCDAB78563412)
 }
 
 @Test func testIPKErrorHandling() async throws {
     // Test error handling for insufficient data
     let data = Data([0x12, 0x34])
-    
-    struct TestField: IPKField {
-        var offset: Int { 0 }
-        var length: Int { 4 }
-    }
-    
-    let field = TestField()
+    let field = IPKBinaryField(offset: 0, length: 4)
     
     #expect(throws: IPKParsingError.self) {
         try field.readUInt32(from: data)
@@ -64,20 +40,15 @@ import Foundation
 }
 
 @Test func testMagicNumberValidation() async throws {
-    // Test magic number validation with a concrete struct
-    struct TestObject: IPKParseable {
-        init(from data: Data) throws {}
-    }
-
     let validData = Data("mhbd".utf8)
     let invalidData = Data("abcd".utf8)
 
     // This should not throw
-    try TestObject.validateMagicNumber(from: validData, expectedId: "mhbd")
+    try iTunesDB.validateMagicNumber(from: validData, expectedId: "mhbd")
 
     // This should throw
     #expect(throws: IPKParsingError.self) {
-        try TestObject.validateMagicNumber(from: invalidData, expectedId: "mhbd")
+        try iTunesDB.validateMagicNumber(from: invalidData, expectedId: "mhbd")
     }
 }
 
@@ -101,18 +72,18 @@ import Foundation
     
     // Test track parsing
     let tracks = reader.tracks
-    #expect(!tracks.isEmpty, "Should have parsed tracks")
+    #expect(tracks.isEmpty == false, "Should have parsed tracks")
     
     // Test first track metadata
-    let firstTrack = tracks[0]
+    let firstTrack = try #require(tracks.first)
     #expect(firstTrack.length > 0, "Track should have duration")
     #expect(firstTrack.size > 0, "Track should have file size")
     
     // Test convenience properties
     #expect(firstTrack.durationInSeconds > 0, "Should calculate duration in seconds")
-    #expect(!firstTrack.durationFormatted.isEmpty, "Should format duration")
-    #expect(!firstTrack.fileSizeFormatted.isEmpty, "Should format file size")
-    #expect(!firstTrack.displayName.isEmpty, "Should have display name")
+    #expect(firstTrack.durationFormatted.isEmpty == false, "Should format duration")
+    #expect(firstTrack.fileSizeFormatted.isEmpty == false, "Should format file size")
+    #expect(firstTrack.displayName.isEmpty == false, "Should have display name")
     
     print("✅ Parsed \(reader.trackCount) tracks from iTunes database")
     print("✅ First track: \(firstTrack.displayName)")
@@ -238,7 +209,7 @@ import Foundation
     // Verify device detection and loaded files
     #expect(reader.hasMainDatabase, "Should have main database")
     #expect(reader.totalTrackCount > 0, "Should have tracks")
-    #expect(!reader.loadedFiles.isEmpty, "Should have loaded files")
+    #expect(reader.loadedFiles.isEmpty == false, "Should have loaded files")
     
     // Test device info
     let deviceInfo = reader.deviceInfo
@@ -327,19 +298,19 @@ import Foundation
         // Search by title if available
         if let title = firstTrack.title, !title.isEmpty {
             let titleResults = reader.tracks(withTitle: title)
-            #expect(!titleResults.isEmpty, "Should find tracks by title")
+            #expect(titleResults.isEmpty == false, "Should find tracks by title")
         }
         
         // Search by artist if available
         if let artist = firstTrack.artist, !artist.isEmpty {
             let artistResults = reader.tracks(byArtist: artist)
-            #expect(!artistResults.isEmpty, "Should find tracks by artist")
+            #expect(artistResults.isEmpty == false, "Should find tracks by artist")
         }
         
         // Search by album if available
         if let album = firstTrack.album, !album.isEmpty {
             let albumResults = reader.tracks(fromAlbum: album)
-            #expect(!albumResults.isEmpty, "Should find tracks by album")
+            #expect(albumResults.isEmpty == false, "Should find tracks by album")
         }
     }
     

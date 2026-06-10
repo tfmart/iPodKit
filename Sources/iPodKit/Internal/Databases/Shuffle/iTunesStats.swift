@@ -15,13 +15,13 @@ import Foundation
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesStats
 internal struct iTunesStats: IPKParseable, Sendable {
     // Binary fields
-    public let numberOfEntries: UInt32
-    public let entryLength: UInt32
+    let numberOfEntries: UInt32
+    let entryLength: UInt32
     
     // Stat entries
-    public let entries: [iTunesStatEntry]
+    let entries: [iTunesStatEntry]
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         guard data.count >= 8 else {
             throw IPKParsingError.insufficientData
         }
@@ -48,81 +48,7 @@ internal struct iTunesStats: IPKParseable, Sendable {
     }
 }
 
-// MARK: - iTunes Stat Entry
-internal struct iTunesStatEntry: IPKParseable, Sendable {
-    // Binary fields (little-endian)
-    public let playCount: UInt32
-    public let lastPlayed: UInt32
-    public let rating: UInt32
-    public let skipCount: UInt32
-    public let lastSkipped: UInt32
-    public let bookmark: UInt32
-    
-    public init(from data: Data) throws {
-        guard data.count >= 24 else {
-            throw IPKParsingError.insufficientData
-        }
-        
-        // Read fields (little-endian)
-        self.playCount = try data.readUInt32(at: 0)
-        self.lastPlayed = try data.readUInt32(at: 4)
-        self.rating = try data.readUInt32(at: 8)
-        self.skipCount = try data.readUInt32(at: 12)
-        self.lastSkipped = try data.readUInt32(at: 16)
-        self.bookmark = try data.readUInt32(at: 20)
-    }
-}
-
-// MARK: - Convenience Properties
-extension iTunesStatEntry {
-    /// Last played date converted from Mac epoch timestamp
-    var lastPlayedDate: Date? {
-        guard lastPlayed > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(lastPlayed) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
-    }
-    
-    /// Last skipped date converted from Mac epoch timestamp
-    var lastSkippedDate: Date? {
-        guard lastSkipped > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(lastSkipped) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
-    }
-    
-    /// Star rating (0-5)
-    var starRating: Int {
-        return Int(rating) / 20
-    }
-    
-    /// Bookmark time in seconds
-    var bookmarkTimeInSeconds: Double {
-        return Double(bookmark) / 1000.0
-    }
-
-    /// Whether this track has been played
-    var hasBeenPlayed: Bool {
-        return playCount > 0
-    }
-    
-    /// Whether this track has been skipped
-    var hasBeenSkipped: Bool {
-        return skipCount > 0
-    }
-    
-    /// Whether this track has a bookmark
-    var hasBookmark: Bool {
-        return bookmark > 0
-    }
-
-    /// Whether this track has a rating
-    var hasRating: Bool {
-        return rating > 0
-    }
-}
-
-// MARK: - Public API
+// MARK: - Internal API
 extension iTunesStats {
     /// Get stat entry for a specific track by index
     /// - Parameter trackIndex: Zero-based track index

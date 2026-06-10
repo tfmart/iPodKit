@@ -11,77 +11,40 @@ import Foundation
 /// 
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Database_Object
 internal struct iTunesDB: IPKParseable, Sendable {
-    public let headerLength: UInt32
-    public let totalLength: UInt32
-    public let versionNumber: UInt32
-    public let numberOfChildren: UInt32
+    let headerLength: UInt32
+    let totalLength: UInt32
+    let versionNumber: UInt32
+    let numberOfChildren: UInt32
 
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhbd")
 
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        self.totalLength = try Self.TotalLength().readUInt32(from: data)
-        self.versionNumber = try Self.VersionNumber().readUInt32(from: data)
-        self.numberOfChildren = try Self.NumberOfChildren().readUInt32(from: data)
-        _ = try Self.DatabaseId().readUInt64(from: data)
-        _ = try Self.LanguageId().readUInt16(from: data)
-        _ = try Self.LibraryPersistentId().readUInt64(from: data)
-        _ = try Self.Hash().readBytes(from: data)
-        _ = try Self.TimezoneOffset().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        self.totalLength = try Self.totalLengthField.readUInt32(from: data)
+        self.versionNumber = try Self.versionNumberField.readUInt32(from: data)
+        self.numberOfChildren = try Self.numberOfChildrenField.readUInt32(from: data)
+        _ = try Self.databaseIdField.readUInt64(from: data)
+        _ = try Self.languageIdField.readUInt16(from: data)
+        _ = try Self.libraryPersistentIdField.readUInt64(from: data)
+        _ = try Self.hashField.readBytes(from: data)
+        _ = try Self.timezoneOffsetField.readUInt32(from: data)
 
         // ObscureHash only exists in newer versions (dbversion >= 0x19)
         if headerLength >= 108 && data.count >= 108 {
-            _ = try Self.ObscureHash().readBytes(from: data)
+            _ = try Self.obscureHashField.readBytes(from: data)
         }
     }
-    
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct VersionNumber: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-    }
-    
-    struct NumberOfChildren: IPKField {
-        var offset: Int { 20 }
-        var length: Int { 4 }
-    }
-    
-    struct DatabaseId: IPKField {
-        var offset: Int { 24 }
-        var length: Int { 8 }
-    }
-    
-    struct LanguageId: IPKField {
-        var offset: Int { 48 }
-        var length: Int { 2 }
-    }
-    
-    struct LibraryPersistentId: IPKField {
-        var offset: Int { 50 }
-        var length: Int { 8 }
-    }
-    
-    struct Hash: IPKField {
-        var offset: Int { 64 }
-        var length: Int { 20 }
-    }
-    
-    struct TimezoneOffset: IPKField {
-        var offset: Int { 84 }
-        var length: Int { 4 }
-    }
-    
-    struct ObscureHash: IPKField {
-        var offset: Int { 88 }
-        var length: Int { 20 }
-    }
+}
+
+extension iTunesDB {
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let versionNumberField = IPKBinaryField(offset: 16, length: 4)
+    static let numberOfChildrenField = IPKBinaryField(offset: 20, length: 4)
+    static let databaseIdField = IPKBinaryField(offset: 24, length: 8)
+    static let languageIdField = IPKBinaryField(offset: 48, length: 2)
+    static let libraryPersistentIdField = IPKBinaryField(offset: 50, length: 8)
+    static let hashField = IPKBinaryField(offset: 64, length: 20)
+    static let timezoneOffsetField = IPKBinaryField(offset: 84, length: 4)
+    static let obscureHashField = IPKBinaryField(offset: 88, length: 20)
 }

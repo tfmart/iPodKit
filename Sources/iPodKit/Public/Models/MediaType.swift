@@ -11,7 +11,7 @@ import Foundation
 ///
 /// Media type determines how the track appears in iPod menus and what
 /// playback features are available.
-public enum MediaType: UInt32, Sendable, CaseIterable {
+public enum MediaType: UInt32, Sendable, CaseIterable, CustomStringConvertible {
     /// Audio file (music)
     case audio = 0x00000001
 
@@ -54,8 +54,8 @@ public enum MediaType: UInt32, Sendable, CaseIterable {
         }
     }
     
-    /// Human-readable description of the media type
-    var displayName: String {
+    /// Human-readable description of the media type.
+    public var displayName: String {
         switch self {
         case .audio: return "Music"
         case .video: return "Movie"
@@ -66,5 +66,9 @@ public enum MediaType: UInt32, Sendable, CaseIterable {
         case .tvShow, .tvShowWithMusic: return "TV Show"
         case .unknown: return "Unknown"
         }
+    }
+
+    public var description: String {
+        displayName
     }
 }

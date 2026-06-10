@@ -15,16 +15,16 @@ import Foundation
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesPState
 internal struct iTunesPState: IPKParseable, Sendable {
     // Binary fields (little-endian)
-    public let volume: UInt32
-    public let position: UInt32
-    public let currentTrack: UInt32
-    public let shuffleMode: UInt32
-    public let repeatMode: UInt32
-    public let isPlaying: UInt32
-    public let soundCheck: UInt32
-    public let remainingTime: UInt32
+    let volume: UInt32
+    let position: UInt32
+    let currentTrack: UInt32
+    let shuffleMode: UInt32
+    let repeatMode: UInt32
+    let isPlaying: UInt32
+    let soundCheck: UInt32
+    let remainingTime: UInt32
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         guard data.count >= 32 else {
             throw IPKParsingError.insufficientData
         }
@@ -126,7 +126,7 @@ extension iTunesPState {
     }
 }
 
-// MARK: - Public API
+// MARK: - Internal API
 extension iTunesPState {
     /// Create a summary dictionary of the playback state
     var summary: [String: Any] {

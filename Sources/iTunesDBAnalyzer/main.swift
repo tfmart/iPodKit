@@ -1,4 +1,10 @@
 #!/usr/bin/env swift
+//
+//  main.swift
+//  iPodKit
+//
+//  Created by Tomas Martins on 20/01/26.
+//
 
 import Foundation
 import iPodKit
@@ -7,7 +13,7 @@ guard CommandLine.arguments.count > 1 else {
     print("Usage: analyze-itunes-db /path/to/iPod")
     print("")
     print("Example:")
-    print("  analyze-itunes-db /Volumes/iPod")
+    print("  analyze-itunes-db '/Users/me/iPod Database/iTunesDB'")
     exit(1)
 }
 
@@ -25,7 +31,7 @@ print("Analyzing iPod at: \(iPodPath)")
 print(String(repeating: "=", count: 50))
 
 do {
-    let ipod = try iPod(url: URL(fileURLWithPath: iPodPath))
+    let ipod = try iPod(contentsOf: URL(fileURLWithPath: iPodPath))
 
     if let deviceName = ipod.deviceName {
         print("Device: \(deviceName)")

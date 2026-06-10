@@ -10,14 +10,9 @@ import Foundation
 /// Playlist Item object in iTunes database
 ///
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Playlist_Item
-internal enum ITDBPlaylistItem {
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
+internal enum ITDBPlaylistItem {}
 
-    struct TrackId: IPKField {
-        var offset: Int { 24 }
-        var length: Int { 4 }
-    }
+extension ITDBPlaylistItem {
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let trackIdField = IPKBinaryField(offset: 24, length: 4)
 }

@@ -21,7 +21,7 @@ internal struct ArtworkImageItem: Sendable {
     let thumbnails: [ArtworkThumbnail]
 
     init(from data: Data) throws {
-        guard data.count >= 4 else {
+        guard data.count >= 52 else {
             throw IPKParsingError.insufficientData
         }
 

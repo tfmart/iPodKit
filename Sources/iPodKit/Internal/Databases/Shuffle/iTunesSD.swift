@@ -15,14 +15,14 @@ import Foundation
 /// Reference: http://www.ipodlinux.org/ITunesDB/#iTunesSD
 internal struct iTunesSD: IPKParseable, Sendable {
     // Binary fields
-    public let headerLength: UInt32
-    public let versionNumber: UInt32
-    public let numberOfTracks: UInt32
+    let headerLength: UInt32
+    let versionNumber: UInt32
+    let numberOfTracks: UInt32
     
     // Track entries
-    public let tracks: [iTunesSDTrack]
+    let tracks: [iTunesSDTrack]
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         // Check for big-endian format identifier
         guard data.count >= 4 else {
             throw IPKParsingError.insufficientData
@@ -37,10 +37,10 @@ internal struct iTunesSD: IPKParseable, Sendable {
         }
         
         // Parse header fields (big-endian)
-        self.headerLength = try Self.HeaderLength().readUInt32BigEndian(from: data)
-        _ = try Self.TotalLength().readUInt32BigEndian(from: data)
-        self.versionNumber = try Self.VersionNumber().readUInt32BigEndian(from: data)
-        self.numberOfTracks = try Self.NumberOfTracks().readUInt32BigEndian(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32BigEndian(from: data)
+        _ = try Self.totalLengthField.readUInt32BigEndian(from: data)
+        self.versionNumber = try Self.versionNumberField.readUInt32BigEndian(from: data)
+        self.numberOfTracks = try Self.numberOfTracksField.readUInt32BigEndian(from: data)
         
         // Parse track entries
         var tracks: [iTunesSDTrack] = []
@@ -60,63 +60,7 @@ internal struct iTunesSD: IPKParseable, Sendable {
     }
 }
 
-// MARK: - iTunesSD Track Entry
-internal struct iTunesSDTrack: IPKParseable, Sendable {
-    // Binary fields (all big-endian)
-    public let length: UInt32
-    public let startTime: UInt32
-    public let stopTime: UInt32
-    public let volume: UInt32
-    public let shuffleFlag: UInt32
-    public let bookmarkFlag: UInt32
-    public let filename: String
-    
-    public init(from data: Data) throws {
-        guard data.count >= 512 else {
-            throw IPKParsingError.insufficientData
-        }
-        
-        // Read binary fields (big-endian)
-        self.length = try Self.Length().readUInt32BigEndian(from: data)
-        _ = try Self.FileType().readUInt32BigEndian(from: data)
-        self.startTime = try Self.StartTime().readUInt32BigEndian(from: data)
-        self.stopTime = try Self.StopTime().readUInt32BigEndian(from: data)
-        self.volume = try Self.Volume().readUInt32BigEndian(from: data)
-        self.shuffleFlag = try Self.ShuffleFlag().readUInt32BigEndian(from: data)
-        self.bookmarkFlag = try Self.BookmarkFlag().readUInt32BigEndian(from: data)
-        
-        // Read filename (starts at offset 28, null-terminated)
-        let filenameData = data.subdata(in: 28..<data.count)
-        if let nullIndex = filenameData.firstIndex(of: 0) {
-            let nameData = filenameData.prefix(upTo: nullIndex)
-            self.filename = String(data: nameData, encoding: .utf8) ?? ""
-        } else {
-            self.filename = String(data: filenameData, encoding: .utf8) ?? ""
-        }
-    }
-}
-
-// MARK: - Convenience Properties
-extension iTunesSDTrack {
-    /// Track duration in seconds
-    var durationInSeconds: Double {
-        return Double(length) / 1000.0
-    }
-
-    /// File extension
-    var fileExtension: String {
-        let url = URL(fileURLWithPath: filename)
-        return url.pathExtension.lowercased()
-    }
-
-    /// Display name (filename without extension)
-    var displayName: String {
-        let url = URL(fileURLWithPath: filename)
-        return url.deletingPathExtension().lastPathComponent
-    }
-}
-
-// MARK: - Public API
+// MARK: - Internal API
 extension iTunesSD {
     /// Total duration of all tracks
     var totalDuration: Double {
@@ -146,171 +90,10 @@ extension iTunesSD {
 }
 
 // MARK: - Field Definitions with Big-Endian Support
-extension iTunesSD {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct VersionNumber: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct NumberOfTracks: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-}
 
-extension iTunesSDTrack {
-    struct Length: IPKField {
-        var offset: Int { 0 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct FileType: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct StartTime: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct StopTime: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct Volume: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct ShuffleFlag: IPKField {
-        var offset: Int { 20 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
-    
-    struct BookmarkFlag: IPKField {
-        var offset: Int { 24 }
-        var length: Int { 4 }
-        
-        func readUInt32BigEndian(from data: Data) throws -> UInt32 {
-            guard offset >= 0 && offset + 3 < data.count else {
-                throw IPKParsingError.invalidOffset(offset)
-            }
-            return (UInt32(data[offset]) << 24) |
-                   (UInt32(data[offset + 1]) << 16) |
-                   (UInt32(data[offset + 2]) << 8) |
-                   UInt32(data[offset + 3])
-        }
-    }
+extension iTunesSD {
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let versionNumberField = IPKBinaryField(offset: 12, length: 4)
+    static let numberOfTracksField = IPKBinaryField(offset: 16, length: 4)
 }

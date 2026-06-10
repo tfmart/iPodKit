@@ -8,58 +8,10 @@
 import Foundation
 import SQLite
 
-/// Track information from SQLite-based iTunes Library
-internal struct ITLibTrack: Sendable {
-    let pid: Int64
-    let title: String
-    let artist: String
-    let album: String
-    let totalTimeMs: Double
-    let playCount: Int
-    let datePlayed: Int64  // Core Data timestamp (seconds since Jan 1, 2001)
-
-    /// Last played date converted from Core Data timestamp
-    var lastPlayedDate: Date? {
-        guard datePlayed > 0 else { return nil }
-        // Core Data timestamp: seconds since Jan 1, 2001
-        // Jan 1, 2001 00:00:00 UTC = Unix timestamp 978307200
-        let coreDataEpochOffset: TimeInterval = 978307200
-        return Date(timeIntervalSince1970: Double(datePlayed) + coreDataEpochOffset)
-    }
-
-    /// Track duration in seconds
-    var durationInSeconds: Double {
-        return totalTimeMs / 1000.0
-    }
-
-}
-
-/// Playlist information from SQLite-based iTunes Library
-internal struct ITLibPlaylist: Sendable {
-    let id: Int64
-    let name: String
-    let isMasterPlaylist: Bool
-    let trackPids: [Int64]
-}
-
-
 /// High-level reader for SQLite-based iTunes Library files.
 ///
-/// This class provides a convenient interface for reading and parsing
-/// iTunes Library files from iPods that use the SQLite-based library format
-/// instead of the binary iTunesDB format.
-///
-/// ## Usage
-///
-/// ```swift
-/// // Parse iTunes Library from iPod
-/// let reader = try iTunesLibraryReader(iPodPath: "/Volumes/iPod")
-///
-/// print("Tracks: \(reader.trackCount)")
-/// for track in reader.playedTracks() {
-///     print("\(track.title) by \(track.artist)")
-/// }
-/// ```
+/// This class reads `Library.itdb` for track metadata and attaches
+/// `Dynamic.itdb` for play counts and last-played dates.
 ///
 /// ## Database Structure
 ///
@@ -83,8 +35,8 @@ final class iTunesLibraryReader: Sendable {
 
     // MARK: - Initialization
 
-    /// Initialize from iPod root directory
-    /// - Parameter iPodPath: Path to iPod root directory (e.g., "/Volumes/iPod")
+    /// Initialize from a directory that contains the iTunes Library package.
+    /// - Parameter iPodPath: Path to a directory containing the iTunes Library package.
     /// - Throws: IPKParsingError if files not found or parsing fails
     convenience init(iPodPath: String) throws {
         let basePath = URL(fileURLWithPath: iPodPath)
@@ -128,7 +80,7 @@ final class iTunesLibraryReader: Sendable {
             let db = try Connection(libraryPath.path, readonly: true)
 
             // Attach Dynamic database
-            try db.execute("ATTACH DATABASE '\(dynamicPath.path)' AS dynamic")
+            try db.execute("ATTACH DATABASE \(sqliteStringLiteral(dynamicPath.path)) AS dynamic")
 
             // First, get tracks from item table
             let itemTable = Table("item")
@@ -191,6 +143,10 @@ final class iTunesLibraryReader: Sendable {
         } catch {
             throw IPKParsingError.databaseError(error.localizedDescription)
         }
+    }
+
+    private static func sqliteStringLiteral(_ value: String) -> String {
+        "'\(value.replacingOccurrences(of: "'", with: "''"))'"
     }
 
     /// Parses playlists from the container and item_to_container tables.
@@ -308,7 +264,7 @@ final class iTunesLibraryReader: Sendable {
     }
 }
 
-// MARK: - Public API
+// MARK: - Internal API
 
 extension iTunesLibraryReader {
 
@@ -317,96 +273,4 @@ extension iTunesLibraryReader {
         return tracks.count
     }
 
-    /// Get tracks filtered by a predicate
-    /// - Parameter predicate: Filter condition
-    /// - Returns: Filtered tracks
-    func tracks(where predicate: (ITLibTrack) -> Bool) -> [ITLibTrack] {
-        return tracks.filter(predicate)
-    }
-
-    /// Get track by unique ID (pid)
-    /// - Parameter pid: Track unique ID
-    /// - Returns: Track if found
-    func track(withPid pid: Int64) -> ITLibTrack? {
-        return tracks.first { $0.pid == pid }
-    }
-
-    /// Search tracks by title
-    /// - Parameter title: Title to search for (case-insensitive)
-    /// - Returns: Tracks matching the title
-    func tracks(withTitle title: String) -> [ITLibTrack] {
-        return tracks.filter { track in
-            track.title.localizedCaseInsensitiveContains(title)
-        }
-    }
-
-    /// Search tracks by artist
-    /// - Parameter artist: Artist to search for (case-insensitive)
-    /// - Returns: Tracks by the artist
-    func tracks(byArtist artist: String) -> [ITLibTrack] {
-        return tracks.filter { track in
-            track.artist.localizedCaseInsensitiveContains(artist)
-        }
-    }
-
-    /// Search tracks by album
-    /// - Parameter album: Album to search for (case-insensitive)
-    /// - Returns: Tracks from the album
-    func tracks(fromAlbum album: String) -> [ITLibTrack] {
-        return tracks.filter { track in
-            track.album.localizedCaseInsensitiveContains(album)
-        }
-    }
-
-    /// Get all unique artists
-    /// - Returns: Array of unique artist names
-    func allArtists() -> [String] {
-        let artists = tracks.compactMap { $0.artist.isEmpty ? nil : $0.artist }
-        return Array(Set(artists)).sorted()
-    }
-
-    /// Get all unique albums
-    /// - Returns: Array of unique album names
-    func allAlbums() -> [String] {
-        let albums = tracks.compactMap { $0.album.isEmpty ? nil : $0.album }
-        return Array(Set(albums)).sorted()
-    }
-
-    /// Get tracks that have been played at least once
-    /// - Returns: Array of played tracks
-    func playedTracks() -> [ITLibTrack] {
-        return tracks.filter { $0.playCount > 0 }
-    }
-
-    /// Get tracks played after a specific date
-    /// - Parameter date: Date to filter from
-    /// - Returns: Array of recently played tracks
-    func tracks(playedAfter date: Date) -> [ITLibTrack] {
-        return tracks.filter { track in
-            guard let lastPlayed = track.lastPlayedDate else { return false }
-            return lastPlayed > date
-        }
-    }
-
-    /// Get most played tracks
-    /// - Parameter limit: Number of tracks to return
-    /// - Returns: Array of most played tracks
-    func mostPlayedTracks(limit: Int = 10) -> [ITLibTrack] {
-        return tracks
-            .filter { $0.playCount > 0 }
-            .sorted { $0.playCount > $1.playCount }
-            .prefix(limit)
-            .map { $0 }
-    }
-
-    /// Get most recently played tracks
-    /// - Parameter limit: Number of tracks to return
-    /// - Returns: Array of most recently played tracks
-    func recentlyPlayedTracks(limit: Int = 10) -> [ITLibTrack] {
-        return tracks
-            .filter { $0.lastPlayedDate != nil }
-            .sorted { ($0.lastPlayedDate ?? .distantPast) > ($1.lastPlayedDate ?? .distantPast) }
-            .prefix(limit)
-            .map { $0 }
-    }
 }

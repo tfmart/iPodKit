@@ -9,25 +9,26 @@ import Foundation
 
 /// The main entry point for reading iPod databases.
 ///
-/// Create an `iPod` instance by pointing it at the root directory of a mounted iPod.
-/// The initializer automatically detects the database format (binary iTunesDB,
-/// iTunesSD for Shuffle, or SQLite for newer models) and loads all available data.
+/// Create an `iPod` instance with a URL to a supported database file or to a
+/// directory that contains one. The initializer loads the tracks, playlists,
+/// playback metadata, and artwork metadata it can find.
 ///
 /// ```swift
-/// let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+/// let ipod = try iPod(contentsOf: databaseURL)
 ///
 /// print(ipod.deviceName ?? "Unknown iPod")
 /// print("Tracks: \(ipod.tracks.count)")
+/// print("Playlists: \(ipod.playlists.count)")
 ///
-/// for track in ipod.tracks {
-///     print("\(track.title ?? "Unknown") - \(track.artist ?? "Unknown")")
+/// for playlist in ipod.playlists {
+///     print("\(playlist.name): \(playlist.tracks.count) tracks")
 /// }
 /// ```
-public final class iPod: Sendable {
+public struct iPod: Sendable {
 
     // MARK: - Public Properties
 
-    /// URL to the iPod root directory.
+    /// URL used to load the database.
     public let url: URL
 
     /// Device name as configured in iTunes (e.g., "John's iPod").
@@ -45,19 +46,29 @@ public final class iPod: Sendable {
 
     /// All playlists stored on the iPod.
     ///
-    /// iPod Shuffle does not support playlists, so this array will be
-    /// empty for Shuffle devices.
+    /// This array is empty when the loaded database does not contain playlist
+    /// records.
     public let playlists: [Playlist]
 
     // MARK: - Initialization
 
-    /// Create an iPod instance from a mounted iPod directory.
+    /// Create an iPod instance from a supported database file or directory.
     ///
-    /// - Parameter url: URL to the iPod root directory (e.g., `/Volumes/iPod`).
-    /// - Throws: ``IPKError`` if the database files cannot be read or parsed.
-    public init(url: URL) throws {
+    /// - Parameter url: URL to a supported database file or containing directory.
+    /// - Throws: ``iPodError`` if the database files cannot be read or parsed.
+    public init(contentsOf url: URL) throws(iPodError) {
         self.url = url
-        let reader = try iPodDBReader(iPodPath: url.path)
+        let reader: iPodDBReader
+        do {
+            reader = try iPodDBReader(contentsOf: url)
+        } catch let error as iPodError {
+            throw error
+        } catch let error as IPKParsingError {
+            throw Self.publicError(from: error)
+        } catch {
+            throw iPodError.databaseError("The database could not be read.")
+        }
+
         self.deviceName = reader.deviceName
         var artworkIndex: [UInt64: ArtworkImageItem] = [:]
         if let artworkDB = reader.artworkDB {
@@ -66,14 +77,26 @@ public final class iPod: Sendable {
             }
         }
 
-        self.tracks = Self.buildTracks(from: reader, artworkIndex: artworkIndex, iPodURL: url)
-        self.playlists = Self.buildPlaylists(from: reader)
+        let tracks = Self.buildTracks(from: reader, artworkIndex: artworkIndex, iPodURL: URL(fileURLWithPath: reader.basePath))
+        self.tracks = tracks
+        self.playlists = Self.buildPlaylists(from: reader, tracks: tracks)
     }
 }
 
 // MARK: - Private Helpers
 
 private extension iPod {
+
+    static func publicError(from error: IPKParsingError) -> iPodError {
+        switch error {
+        case .fileNotFound(let path):
+            return .invalidPath(path)
+        case .databaseError:
+            return .databaseError("The database could not be read.")
+        case .invalidOffset, .invalidString, .invalidMagicNumber, .insufficientData, .fieldSizeMismatch:
+            return .corruptedData
+        }
+    }
 
     static func buildTracks(from reader: iPodDBReader, artworkIndex: [UInt64: ArtworkImageItem], iPodURL: URL) -> [Track] {
         if let iTunesLibrary = reader.iTunesLibrary {
@@ -100,16 +123,27 @@ private extension iPod {
         return []
     }
 
-    static func buildPlaylists(from reader: iPodDBReader) -> [Playlist] {
+    static func buildPlaylists(from reader: iPodDBReader, tracks: [Track]) -> [Playlist] {
         if let iTunesLibrary = reader.iTunesLibrary {
-            return iTunesLibrary.playlists.map { Playlist($0) }
+            let tracksById = Dictionary(tracks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            return iTunesLibrary.playlists.map { playlist in
+                let playlistTracks = playlist.trackPids.compactMap { tracksById[UInt64(bitPattern: $0)] }
+                return Playlist(playlist, tracks: playlistTracks)
+            }
         }
 
         if let iTunesDB = reader.iTunesDB {
-            return iTunesDB.playlists.map { Playlist($0) }
+            let trackPairs = zip(iTunesDB.tracks.map(\.uniqueId), tracks).map { pair in
+                (pair.0, pair.1)
+            }
+            let tracksByUniqueId = Dictionary(trackPairs, uniquingKeysWith: { first, _ in first })
+            return iTunesDB.playlists.map { playlist in
+                let playlistTracks = playlist.trackIds.compactMap { tracksByUniqueId[$0] }
+                return Playlist(playlist, tracks: playlistTracks)
+            }
         }
 
-        // iPod Shuffle doesn't support playlists
+        // Some database files don't include playlist records.
         return []
     }
 }

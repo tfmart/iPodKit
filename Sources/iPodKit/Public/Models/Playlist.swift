@@ -7,49 +7,52 @@
 
 import Foundation
 
-/// A unified playlist representation that abstracts away the underlying database format.
+/// An ordered collection of tracks stored on an iPod.
 ///
-/// `Playlist` provides a simple, consistent interface for accessing playlist metadata
-/// and track references regardless of whether the data comes from a binary iTunesDB
-/// or SQLite-based iTunes Library file.
+/// ## Overview
 ///
-/// ## Usage
+/// Use ``iPod/playlists`` to access playlists loaded from the iPod. Each
+/// playlist contains resolved ``tracks`` in playlist order, so most apps can
+/// iterate the tracks directly.
 ///
 /// ```swift
-/// let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+/// let ipod = try iPod(contentsOf: databaseURL)
 ///
 /// for playlist in ipod.playlists {
-///     print("\(playlist.displayName) - \(playlist.trackCount) tracks")
+///     print("\(playlist.name): \(playlist.tracks.count) tracks")
+///
+///     for track in playlist.tracks {
+///         print(track.title ?? "Unknown Title")
+///     }
 /// }
 /// ```
 ///
-/// ## Resolving Track References
-///
-/// Playlists store track references as IDs. To get the actual ``Track`` objects
-/// for a playlist, filter the iPod's track array:
+/// The master playlist represents the full music library. Use
+/// ``isMasterPlaylist`` when you want to find it:
 ///
 /// ```swift
-/// let playlistTracks = ipod.tracks.filter { playlist.trackIds.contains($0.id) }
+/// let library = ipod.playlists.first(where: \.isMasterPlaylist)
 /// ```
 ///
-/// > Note: iPod Shuffle does not support playlists. The ``iPod/playlists`` array
-/// > will be empty for Shuffle devices.
+/// Use ``trackIds`` only when you need the raw relationship stored by the
+/// database. If the loaded database doesn't include playlist records,
+/// ``iPod/playlists`` is empty.
 ///
 /// ## Topics
 ///
 /// ### Identification
 /// - ``id``
 /// - ``name``
-/// - ``displayName``
 ///
 /// ### Playlist Type
 /// - ``isMasterPlaylist``
 /// - ``isPodcast``
-/// - ``isEmpty``
 ///
 /// ### Track References
 /// - ``trackCount``
+/// - ``tracks``
 /// - ``trackIds``
+/// - ``timestamp``
 public struct Playlist: Sendable, Identifiable, Hashable {
 
     // MARK: - Identification
@@ -57,10 +60,7 @@ public struct Playlist: Sendable, Identifiable, Hashable {
     /// Unique identifier for this playlist.
     public let id: UInt64
 
-    /// Playlist name as stored in the database.
-    ///
-    /// May be empty for untitled playlists. Use ``displayName`` for a
-    /// guaranteed non-empty label.
+    /// A human-readable playlist name.
     public let name: String
 
     // MARK: - Properties
@@ -68,7 +68,7 @@ public struct Playlist: Sendable, Identifiable, Hashable {
     /// Whether this is the master playlist containing all tracks on the iPod.
     ///
     /// Every iPod database has exactly one master playlist that references
-    /// all tracks. Its ``displayName`` is "All Music".
+    /// all tracks. Its ``name`` is "All Music".
     public let isMasterPlaylist: Bool
 
     /// Whether this is a podcast playlist.
@@ -77,14 +77,15 @@ public struct Playlist: Sendable, Identifiable, Hashable {
     /// Number of tracks in the playlist.
     public let trackCount: Int
 
-    /// Ordered track IDs belonging to this playlist.
+    /// Ordered tracks belonging to this playlist.
     ///
-    /// Each ID corresponds to a ``Track/id``. Use these to look up full
-    /// track objects from ``iPod/tracks``:
+    /// These are resolved when the playlist is created by ``iPod``. The array
+    /// is empty for empty playlists.
+    public let tracks: [Track]
+
+    /// Ordered identifiers for the tracks belonging to this playlist.
     ///
-    /// ```swift
-    /// let playlistTracks = ipod.tracks.filter { playlist.trackIds.contains($0.id) }
-    /// ```
+    /// Each ID corresponds to a ``Track/id`` in ``tracks``.
     public let trackIds: [UInt64]
 
     /// Date the playlist was created or last modified, if available.
@@ -98,37 +99,31 @@ public struct Playlist: Sendable, Identifiable, Hashable {
         isMasterPlaylist: Bool,
         isPodcast: Bool,
         trackCount: Int,
+        tracks: [Track] = [],
         trackIds: [UInt64],
         timestamp: Date?
     ) {
         self.id = id
-        self.name = name
+        self.name = Self.normalizedName(name, isMasterPlaylist: isMasterPlaylist)
         self.isMasterPlaylist = isMasterPlaylist
         self.isPodcast = isPodcast
         self.trackCount = trackCount
+        self.tracks = tracks
         self.trackIds = trackIds
         self.timestamp = timestamp
     }
 }
 
-// MARK: - Convenience Properties
+// MARK: - Private Helpers
 
-public extension Playlist {
+private extension Playlist {
 
-    /// A human-readable name for display purposes.
-    ///
-    /// Returns "All Music" for the master playlist, ``name`` for named
-    /// playlists, or "Untitled Playlist" when the name is empty.
-    var displayName: String {
+    static func normalizedName(_ name: String, isMasterPlaylist: Bool) -> String {
         if isMasterPlaylist {
             return "All Music"
         }
-        return name.isEmpty ? "Untitled Playlist" : name
-    }
 
-    /// Whether this playlist has no tracks.
-    var isEmpty: Bool {
-        trackCount == 0
+        return name.isEmpty ? "Untitled Playlist" : name
     }
 }
 
@@ -137,7 +132,7 @@ public extension Playlist {
 internal extension Playlist {
 
     /// Create a Playlist from an ITDBPlaylist.
-    init(_ itdbPlaylist: ITDBPlaylist) {
+    init(_ itdbPlaylist: ITDBPlaylist, tracks: [Track]? = nil) {
         let timestamp: Date?
         if itdbPlaylist.timestamp > 0 {
             let macEpochOffset: TimeInterval = 2082844800
@@ -147,26 +142,30 @@ internal extension Playlist {
             timestamp = nil
         }
 
+        let resolvedTracks = tracks ?? []
         self.init(
             id: itdbPlaylist.persistentPlaylistId,
             name: itdbPlaylist.name ?? "",
             isMasterPlaylist: itdbPlaylist.isMasterPlaylist,
             isPodcast: itdbPlaylist.isPodcast,
-            trackCount: Int(itdbPlaylist.playlistItemCount),
-            trackIds: itdbPlaylist.trackIds.map { UInt64($0) },
+            trackCount: tracks?.count ?? Int(itdbPlaylist.playlistItemCount),
+            tracks: resolvedTracks,
+            trackIds: tracks?.map(\.id) ?? itdbPlaylist.trackIds.map { UInt64($0) },
             timestamp: timestamp
         )
     }
 
-    /// Create a Playlist from a SQLite-based iTunes Library playlist.
-    init(_ itLibPlaylist: ITLibPlaylist) {
+    /// Create a Playlist from an iTunes Library playlist.
+    init(_ itLibPlaylist: ITLibPlaylist, tracks: [Track]? = nil) {
+        let resolvedTracks = tracks ?? []
         self.init(
             id: UInt64(bitPattern: itLibPlaylist.id),
             name: itLibPlaylist.name,
             isMasterPlaylist: itLibPlaylist.isMasterPlaylist,
             isPodcast: false,
-            trackCount: itLibPlaylist.trackPids.count,
-            trackIds: itLibPlaylist.trackPids.map { UInt64(bitPattern: $0) },
+            trackCount: tracks?.count ?? itLibPlaylist.trackPids.count,
+            tracks: resolvedTracks,
+            trackIds: tracks?.map(\.id) ?? itLibPlaylist.trackPids.map { UInt64(bitPattern: $0) },
             timestamp: nil
         )
     }

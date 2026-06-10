@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  IPKField.swift
 //  iPodKit
 //
 //  Created by Tomas Martins on 10/02/25.
@@ -32,6 +32,19 @@ extension IPKField {
             throw IPKParsingError.fieldSizeMismatch(expected: 4, actual: length, field: "\(type(of: self))")
         }
         return try data.readUInt32(at: offset)
+    }
+
+    func readUInt32BigEndian(from data: Data) throws -> UInt32 {
+        guard length == 4 else {
+            throw IPKParsingError.fieldSizeMismatch(expected: 4, actual: length, field: "\(type(of: self))")
+        }
+        guard offset >= 0 && offset + 3 < data.count else {
+            throw IPKParsingError.invalidOffset(offset)
+        }
+        return (UInt32(data[offset]) << 24) |
+               (UInt32(data[offset + 1]) << 16) |
+               (UInt32(data[offset + 2]) << 8) |
+               UInt32(data[offset + 3])
     }
 
     func readInt32(from data: Data) throws -> Int32 {

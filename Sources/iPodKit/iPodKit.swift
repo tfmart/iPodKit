@@ -7,24 +7,24 @@
 
 /// A Swift library for reading iPod databases.
 ///
-/// iPodKit parses iTunes database files from mounted iPod devices and provides
-/// a simple, unified interface for accessing track metadata, playlists, and artwork.
+/// iPodKit parses iTunes database files and provides a simple interface for
+/// accessing track metadata, playlists, and artwork.
 ///
 /// ## Getting Started
 ///
-/// Create an ``iPod`` instance by pointing it at the root directory of a mounted iPod:
+/// Create an ``iPod`` instance from a supported database file or containing directory:
 ///
 /// ```swift
 /// import iPodKit
 ///
-/// let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+/// let ipod = try iPod(contentsOf: URL(fileURLWithPath: "/Users/me/iPod Database/iTunesDB"))
 ///
 /// print(ipod.deviceName ?? "Unknown iPod")
 /// print("Tracks: \(ipod.tracks.count)")
 /// print("Playlists: \(ipod.playlists.count)")
 ///
-/// for track in ipod.tracks {
-///     print("\(track.title ?? "Unknown") - \(track.artist ?? "Unknown")")
+/// for playlist in ipod.playlists {
+///     print("\(playlist.name): \(playlist.tracks.count) tracks")
 /// }
 /// ```
 ///

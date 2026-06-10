@@ -22,7 +22,7 @@ internal struct ArtworkThumbnail: Sendable {
     let filename: String?
 
     init(from data: Data) throws {
-        guard data.count >= 4 else {
+        guard data.count >= 36 else {
             throw IPKParsingError.insufficientData
         }
 

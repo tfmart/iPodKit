@@ -15,19 +15,19 @@ import Foundation
 /// Reference: http://www.ipodlinux.org/ITunesDB/#OTG_Playlist_File
 internal struct OTGPlaylist: IPKParseable, Sendable {
     // Binary fields
-    public let headerLength: UInt32
-    public let numberOfSongs: UInt32
+    let headerLength: UInt32
+    let numberOfSongs: UInt32
     
     // Track index entries
-    public let trackIndexes: [UInt32]
+    let trackIndexes: [UInt32]
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhpo")
         
         // Parse header fields
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        _ = try Self.EntryLength().readUInt32(from: data)
-        self.numberOfSongs = try Self.NumberOfSongs().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        _ = try Self.entryLengthField.readUInt32(from: data)
+        self.numberOfSongs = try Self.numberOfSongsField.readUInt32(from: data)
         
         // Parse track indexes
         var indexes: [UInt32] = []
@@ -45,7 +45,7 @@ internal struct OTGPlaylist: IPKParseable, Sendable {
     }
 }
 
-// MARK: - Public API
+// MARK: - Internal API
 extension OTGPlaylist {
     /// Check if the playlist is empty
     var isEmpty: Bool {
@@ -59,19 +59,9 @@ extension OTGPlaylist {
 }
 
 // MARK: - Field Definitions
+
 extension OTGPlaylist {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct EntryLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct NumberOfSongs: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let entryLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let numberOfSongsField = IPKBinaryField(offset: 12, length: 4)
 }

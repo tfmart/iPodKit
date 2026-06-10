@@ -7,27 +7,41 @@
 
 import Foundation
 
-/// A unified track representation that abstracts away the underlying database format.
+/// A media item stored in an iPod library.
 ///
-/// `Track` provides a simple, consistent interface for accessing track metadata
-/// regardless of whether the data comes from iTunesDB, Play Counts, iTunesStats,
-/// or SQLite-based iTunes Library files.
+/// ## Overview
 ///
-/// ## Usage
+/// Use `Track` values from ``iPod/tracks`` or ``Playlist/tracks`` to display
+/// music metadata, playback information, and artwork.
 ///
 /// ```swift
-/// let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+/// let ipod = try iPod(contentsOf: databaseURL)
 ///
 /// for track in ipod.tracks {
-///     print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
+///     let title = track.title ?? "Unknown Title"
+///     let artist = track.artist ?? "Unknown Artist"
+///
+///     print("\(title) by \(artist)")
 ///     print("Played \(track.playCount) times")
-///     if let lastPlayed = track.lastPlayed {
-///         print("Last played: \(lastPlayed)")
-///     }
+/// }
+/// ```
+///
+/// Use ``id`` when you need stable identity, such as diffing tracks between
+/// snapshots or matching a track to ``Playlist/trackIds``.
+///
+/// Load artwork through ``artwork`` when it is available:
+///
+/// ```swift
+/// if let artwork = track.artwork {
+///     let image = try await artwork.image()
+///     print("Artwork size: \(image.width)x\(image.height)")
 /// }
 /// ```
 ///
 /// ## Topics
+///
+/// ### Identification
+/// - ``id``
 ///
 /// ### Track Metadata
 /// - ``title``
@@ -35,6 +49,9 @@ import Foundation
 /// - ``album``
 /// - ``genre``
 /// - ``composer``
+/// - ``comment``
+/// - ``grouping``
+/// - ``location``
 ///
 /// ### Playback Information
 /// - ``playCount``
@@ -48,6 +65,16 @@ import Foundation
 /// - ``fileSize``
 /// - ``bitrate``
 /// - ``sampleRate``
+/// - ``trackNumber``
+/// - ``totalTracks``
+/// - ``year``
+/// - ``discNumber``
+/// - ``totalDiscs``
+/// - ``bpm``
+/// - ``mediaType``
+///
+/// ### Artwork
+/// - ``artwork``
 public struct Track: Sendable, Identifiable, Hashable {
 
     // MARK: - Identification
@@ -357,7 +384,7 @@ internal extension Track {
         )
     }
 
-    /// Create a Track from a SQLite-based iTunes Library track (newer iPods).
+    /// Create a Track from an iTunes Library track.
     init(_ itLibTrack: ITLibTrack, index: Int, artwork: ArtworkImageItem? = nil, iPodURL: URL) {
         self.init(
             id: UInt64(bitPattern: itLibTrack.pid),

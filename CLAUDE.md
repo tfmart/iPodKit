@@ -46,11 +46,10 @@ The primary public interface consists of:
 - **`Playlist`** - Unified playlist model
 - **`Artwork`** - Album artwork with multiple size options
 - **`MediaType`** - Track media type (audio, video, podcast, etc.)
-- **`iPodModel`** - iPod device model identification
-- **`IPKError`** - Public error types for consumers
+- **`iPodError`** - Public error types for consumers
 
 ```swift
-let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+let ipod = try iPod(contentsOf: URL(fileURLWithPath: "/Users/me/iPod Database/iTunesDB"))
 
 print(ipod.deviceName ?? "Unknown")
 print("Tracks: \(ipod.tracks.count)")
@@ -58,7 +57,7 @@ print("Tracks: \(ipod.tracks.count)")
 for track in ipod.tracks {
     print("\(track.title ?? "Unknown") - \(track.artist ?? "Unknown")")
     if let artwork = track.artwork {
-        let image = try artwork.loadImage()
+        let image = try await artwork.image()
     }
 }
 ```
@@ -69,13 +68,13 @@ Internal classes handle the complexity (users don't see these):
 
 - **`iPodDBReader`** - Orchestrates loading all database files
 - **`iTunesDBReader`** - Parses iTunesDB format
-- **`iTunesLibraryReader`** - Parses SQLite-based iTunes Library
+- **`iTunesLibraryReader`** - Parses iTunes Library database files
 
 ### Error System
 
 Two-tier error design:
 
-- **`IPKError`** (public) - What consumers catch: `invalidPath`, `noDatabaseFound`, `artworkNotFound`, `artworkDecodingFailed`, `corruptedData`, `databaseError`
+- **`iPodError`** (public) - What consumers catch: `invalidPath`, `noDatabaseFound`, `artworkNotFound`, `artworkDecodingFailed`, `corruptedData`, `databaseError`
 - **`IPKParsingError`** (internal) - What parsers throw: `invalidOffset`, `invalidString`, `invalidMagicNumber`, `insufficientData`, `fieldSizeMismatch`, `fileNotFound`, `databaseError`
 
 ### Database Parsers
@@ -116,10 +115,9 @@ Sources/iPodKit/
 │   │   ├── Track.swift        # Unified track model
 │   │   ├── Playlist.swift     # Unified playlist model
 │   │   ├── Artwork.swift      # Album artwork model
-│   │   ├── MediaType.swift    # Track media type enum
-│   │   └── iPodModel.swift    # Device model identification
+│   │   └── MediaType.swift    # Track media type enum
 │   └── Errors/
-│       └── IPKError.swift     # Public error types
+│       └── iPodError.swift     # Public error types
 └── Internal/
     ├── Core/
     │   ├── Protocols/         # IPKField, IPKParseable
@@ -152,7 +150,7 @@ Sources/iPodKit/
 1. Add methods to `iPod` class in `Public/iPod.swift`
 2. Keep implementation details in `Internal/` classes
 3. Use `Track` and `Playlist` unified models for return types
-4. Throw `IPKError` from public API, `IPKParsingError` from internal code
+4. Throw `iPodError` from public API, `IPKParsingError` from internal code
 
 ### Adding New Database Support
 

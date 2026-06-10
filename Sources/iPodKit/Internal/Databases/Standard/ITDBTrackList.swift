@@ -13,23 +13,16 @@ import Foundation
 internal struct ITDBTrackList: IPKParseable, Sendable {
     init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhlt")
-        _ = try Self.HeaderLength().readUInt32(from: data)
-        _ = try Self.NumberOfSongs().readUInt32(from: data)
+        _ = try Self.headerLengthField.readUInt32(from: data)
+        _ = try Self.numberOfSongsField.readUInt32(from: data)
     }
     
     func getNumberOfSongs(from data: Data) throws -> UInt32 {
-        return try Self.NumberOfSongs().readUInt32(from: data)
+        return try Self.numberOfSongsField.readUInt32(from: data)
     }
 }
 
 extension ITDBTrackList {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct NumberOfSongs: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let numberOfSongsField = IPKBinaryField(offset: 8, length: 4)
 }

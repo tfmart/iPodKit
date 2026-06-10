@@ -104,7 +104,7 @@ import Foundation
 
 // MARK: - Playlist Model Tests
 
-@Test func testPlaylistDisplayName() async throws {
+@Test func testPlaylistName() async throws {
     let regularPlaylist = Playlist(
         id: 1,
         name: "My Favorites",
@@ -115,7 +115,7 @@ import Foundation
         timestamp: nil
     )
 
-    #expect(regularPlaylist.displayName == "My Favorites")
+    #expect(regularPlaylist.name == "My Favorites")
 
     let masterPlaylist = Playlist(
         id: 2,
@@ -127,7 +127,7 @@ import Foundation
         timestamp: nil
     )
 
-    #expect(masterPlaylist.displayName == "All Music")
+    #expect(masterPlaylist.name == "All Music")
 
     let untitledPlaylist = Playlist(
         id: 3,
@@ -139,33 +139,7 @@ import Foundation
         timestamp: nil
     )
 
-    #expect(untitledPlaylist.displayName == "Untitled Playlist")
-}
-
-@Test func testPlaylistIsEmpty() async throws {
-    let emptyPlaylist = Playlist(
-        id: 1,
-        name: "Empty",
-        isMasterPlaylist: false,
-        isPodcast: false,
-        trackCount: 0,
-        trackIds: [],
-        timestamp: nil
-    )
-
-    #expect(emptyPlaylist.isEmpty == true)
-
-    let filledPlaylist = Playlist(
-        id: 2,
-        name: "Filled",
-        isMasterPlaylist: false,
-        isPodcast: false,
-        trackCount: 10,
-        trackIds: [1, 2, 3],
-        timestamp: nil
-    )
-
-    #expect(filledPlaylist.isEmpty == false)
+    #expect(untitledPlaylist.name == "Untitled Playlist")
 }
 
 @Test func testPlaylistEquatable() async throws {
@@ -230,7 +204,7 @@ import Foundation
     }
 
     // Verify we have tracks
-    #expect(!unifiedTracks.isEmpty, "Should have parsed tracks")
+    #expect(unifiedTracks.isEmpty == false, "Should have parsed tracks")
 
     // Test track properties
     let firstTrack = unifiedTracks[0]
@@ -262,7 +236,7 @@ import Foundation
     print("Found \(playlists.count) playlists")
 
     // There should be at least a master playlist
-    #expect(!playlists.isEmpty, "Should have at least one playlist")
+    #expect(playlists.isEmpty == false, "Should have at least one playlist")
 
     // Check that playlists have been parsed correctly
     for playlist in playlists {
@@ -274,19 +248,23 @@ import Foundation
         }
     }
 
-    // Build unified playlists using the same pattern as iPod
-    var trackIdMap: [UInt32: UInt64] = [:]
-    for itdbTrack in iTunesDB.tracks {
-        trackIdMap[itdbTrack.uniqueId] = UInt64(itdbTrack.uniqueId)
+    // Build unified tracks and playlists using the same relationship as iPod.
+    let dummyURL = URL(fileURLWithPath: "/")
+    let unifiedTracks = iTunesDB.tracks.enumerated().map { index, track in
+        Track(track, index: index, iPodURL: dummyURL)
     }
+    let tracksByUniqueId = Dictionary(
+        zip(iTunesDB.tracks.map(\.uniqueId), unifiedTracks).map { pair in (pair.0, pair.1) },
+        uniquingKeysWith: { first, _ in first }
+    )
 
     for itdbPlaylist in playlists {
-        let unifiedPlaylist = Playlist(itdbPlaylist)
+        let playlistTracks = itdbPlaylist.trackIds.compactMap { tracksByUniqueId[$0] }
+        let unifiedPlaylist = Playlist(itdbPlaylist, tracks: playlistTracks)
         #expect(unifiedPlaylist.id > 0, "Playlist should have a valid ID")
+        #expect(unifiedPlaylist.trackIds == unifiedPlaylist.tracks.map(\.id), "Playlist track IDs should match resolved tracks")
 
-        // Verify track IDs can be mapped
-        let mappedTrackIds = itdbPlaylist.trackIds.compactMap { trackIdMap[$0] }
-        print("Playlist '\(unifiedPlaylist.displayName)': \(mappedTrackIds.count)/\(itdbPlaylist.trackIds.count) tracks mapped")
+        print("Playlist '\(unifiedPlaylist.name)': \(unifiedPlaylist.tracks.count)/\(itdbPlaylist.trackIds.count) tracks mapped")
     }
 
     print("✅ Playlist parsing test passed")

@@ -1,36 +1,46 @@
 # ``iPodKit``
 
-A Swift library for reading iPod databases.
+Read tracks, playlists, playback metadata, and artwork from iPod databases.
 
 ## Overview
 
-iPodKit parses iTunes database files from mounted iPod devices and provides
-a simple, unified interface for accessing track metadata, playlists, and artwork.
-It automatically detects the device type and loads all available database files,
-merging data from multiple sources into ``Track`` and ``Playlist`` objects.
+iPodKit gives apps a Swift interface for iPod libraries. Load an ``iPod`` from
+an iTunesDB, iTunesSD, Library.itdb, or a directory that contains one of those
+files, then inspect ``Track``, ``Playlist``, and ``Artwork`` values.
 
 ### Quick Start
 
 ```swift
 import iPodKit
 
-let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+let ipod = try iPod(contentsOf: URL(fileURLWithPath: "/Users/me/iPod Database/iTunesDB"))
 
 print(ipod.deviceName ?? "Unknown iPod")
 
 for track in ipod.tracks {
     print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
 }
+
+for playlist in ipod.playlists {
+    print("\(playlist.name): \(playlist.tracks.count) tracks")
+}
 ```
 
-### Supported Formats
+### Supported Data
 
-- **iTunesDB** — Binary format used by iPod Classic, Mini, and Nano
-- **iTunesSD** — Binary format used by iPod Shuffle
-- **iTunes Library (SQLite)** — Used by newer iPod models
-- **ArtworkDB** — Album artwork storage (merged automatically)
+iPodKit automatically reads the supported database layout and merges sidecar
+data when available:
+
+- track metadata
+- playlists
+- play counts, ratings, skips, and last-played dates
+- album artwork metadata and image data
 
 ## Topics
+
+### Getting Started
+
+- <doc:GettingStarted>
 
 ### Essentials
 
@@ -42,14 +52,7 @@ for track in ipod.tracks {
 
 - ``Artwork``
 - ``MediaType``
-- ``iPodModel``
 
 ### Errors
 
-- ``IPKError``
-
-### Internal Architecture
-
-- <doc:BinaryParsingFramework>
-- <doc:ProtocolBasedDesign>
-- <doc:StandardiPoddatabases>
+- ``iPodError``

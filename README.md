@@ -17,7 +17,7 @@ dependencies: [
 ```swift
 import iPodKit
 
-let ipod = try iPod(url: URL(fileURLWithPath: "/Volumes/iPod"))
+let ipod = try iPod(contentsOf: URL(fileURLWithPath: "/Users/me/iPod Database/iTunesDB"))
 
 print(ipod.deviceName ?? "Unknown iPod")
 print("Tracks: \(ipod.tracks.count)")
@@ -32,59 +32,65 @@ for track in ipod.tracks {
 ### Track Metadata
 
 ```swift
-let track = ipod.tracks.first!
-
-track.title           // String?
-track.artist          // String?
-track.album           // String?
-track.genre           // String?
-track.composer        // String?
-track.duration        // TimeInterval (seconds)
-track.fileSize        // Int (bytes)
-track.bitrate         // Int? (kbps)
-track.trackNumber     // Int?
-track.year            // Int?
-track.discNumber      // Int?
-track.bpm             // Int?
-track.isCompilation   // Bool
-track.mediaType       // MediaType
+if let track = ipod.tracks.first {
+    track.title           // String?
+    track.artist          // String?
+    track.album           // String?
+    track.genre           // String?
+    track.composer        // String?
+    track.duration        // TimeInterval (seconds)
+    track.fileSize        // Int (bytes)
+    track.bitrate         // Int? (kbps)
+    track.trackNumber     // Int?
+    track.year            // Int?
+    track.discNumber      // Int?
+    track.bpm             // Int?
+    track.isCompilation   // Bool
+    track.mediaType       // MediaType
+}
 ```
 
 ### Playback Data
 
 ```swift
-track.playCount       // Int
-track.skipCount       // Int
-track.rating          // Int (0-5 stars)
-track.lastPlayed      // Date?
-track.lastSkipped     // Date?
-track.dateAdded       // Date?
-track.bookmark        // TimeInterval? (resume position)
+if let track = ipod.tracks.first {
+    track.playCount       // Int
+    track.skipCount       // Int
+    track.rating          // Int (0-5 stars)
+    track.lastPlayed      // Date?
+    track.lastSkipped     // Date?
+    track.dateAdded       // Date?
+    track.bookmark        // TimeInterval? (resume position)
+}
 ```
 
 ### Playlists
 
 ```swift
 for playlist in ipod.playlists {
-    print("\(playlist.displayName) - \(playlist.trackCount) tracks")
-}
+    print("\(playlist.name) - \(playlist.tracks.count) tracks")
 
-// Resolve track references
-let playlistTracks = ipod.tracks.filter { playlist.trackIds.contains($0.id) }
+    for track in playlist.tracks {
+        print("  \(track.title ?? "Unknown")")
+    }
+
+    // Track identifiers are available when needed
+    print(playlist.trackIds)
+}
 ```
 
 ### Album Artwork
 
 ```swift
-if let artwork = track.artwork {
+if let artwork = ipod.tracks.first?.artwork {
     // Largest available size
-    let image = try artwork.loadImage()
+    let image = try await artwork.image()
 
     // Specific size
-    let thumb = try artwork.loadImage(width: 56, height: 56)
+    let thumb = try await artwork.image(size: .init(width: 56, height: 56))
 
     // Available sizes
-    print(artwork.sizes) // [(width: 56, height: 56), (width: 140, height: 140)]
+    print(artwork.sizes)
 }
 ```
 

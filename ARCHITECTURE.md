@@ -2,15 +2,15 @@
 
 Developer/maintainer reference for iPodKit's internals. For public API usage, see the DocC documentation.
 
-## How `iPod(url:)` Works
+## How `iPod(contentsOf:)` Works
 
 ```
-iPod.init(url:)
+iPod.init(contentsOf:)
   |
-  +-> iPodDBReader(iPodPath:)
+  +-> iPodDBReader(contentsOf:)
   |     |
   |     +-> detectDeviceType()
-  |     |     Checks files on disk to classify the iPod:
+  |     |     Checks files on disk to classify the database:
   |     |       1. SQLite first  (Library.itdb + Dynamic.itdb)
   |     |       2. Shuffle       (iTunesSD at root)
   |     |       3. Photo/Standard (iTunesDB + optional ArtworkDB)
@@ -37,7 +37,7 @@ iPod.init(url:)
   +-> iPod.buildPlaylists(from:)
         1. iTunesLibrary  -> Playlist(ITLibPlaylist)
         2. iTunesDB       -> Playlist(ITDBPlaylist)
-        3. Shuffle has no playlists -> []
+        3. iTunesSD       -> []
 ```
 
 ## Three Database Formats
@@ -116,8 +116,8 @@ Sources/iPodKit/
 ├── Documentation.docc/              DocC articles
 ├── Public/                          Consumer-facing API
 │   ├── iPod.swift                   Main entry point
-│   ├── Models/                      Track, Playlist, Artwork, MediaType, iPodModel
-│   └── Errors/                      IPKError
+│   ├── Models/                      Track, Playlist, Artwork, MediaType
+│   └── Errors/                      iPodError
 └── Internal/                        Implementation details
     ├── Core/
     │   ├── Protocols/               IPKField, IPKParseable

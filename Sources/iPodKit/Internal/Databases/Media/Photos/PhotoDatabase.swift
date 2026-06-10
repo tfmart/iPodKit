@@ -15,22 +15,22 @@ import Foundation
 /// Reference: http://www.ipodlinux.org/ITunesDB/#Photo_Database
 internal struct PhotoDatabase: IPKParseable, Sendable {
     // Binary fields
-    public let headerLength: UInt32
-    public let versionNumber: UInt32
-    public let numberOfChildren: UInt32
+    let headerLength: UInt32
+    let versionNumber: UInt32
+    let numberOfChildren: UInt32
     
     // Photo albums and images
-    public let albums: [PhotoAlbum]
-    public let images: [PhotoImage]
+    let albums: [PhotoAlbum]
+    let images: [PhotoImage]
     
-    public init(from data: Data) throws {
+    init(from data: Data) throws {
         try Self.validateMagicNumber(from: data, expectedId: "mhfd")
         
         // Parse header fields
-        self.headerLength = try Self.HeaderLength().readUInt32(from: data)
-        _ = try Self.TotalLength().readUInt32(from: data)
-        self.versionNumber = try Self.VersionNumber().readUInt32(from: data)
-        self.numberOfChildren = try Self.NumberOfChildren().readUInt32(from: data)
+        self.headerLength = try Self.headerLengthField.readUInt32(from: data)
+        _ = try Self.totalLengthField.readUInt32(from: data)
+        self.versionNumber = try Self.versionNumberField.readUInt32(from: data)
+        self.numberOfChildren = try Self.numberOfChildrenField.readUInt32(from: data)
         
         var albums: [PhotoAlbum] = []
         var images: [PhotoImage] = []
@@ -66,20 +66,8 @@ internal struct PhotoDatabase: IPKParseable, Sendable {
     }
 }
 
-// MARK: - Public API
+// MARK: - Internal API
 extension PhotoDatabase {
-    /// Get JPEG images
-    /// - Returns: Array of JPEG images
-    func jpegImages() -> [PhotoImage] {
-        return images.filter { $0.isJPEG }
-    }
-    
-    /// Get PNG images
-    /// - Returns: Array of PNG images
-    func pngImages() -> [PhotoImage] {
-        return images.filter { $0.isPNG }
-    }
-    
     /// Total photo storage size
     var totalPhotoSize: UInt64 {
         return images.reduce(0) { $0 + UInt64($1.imageSize) }
@@ -95,24 +83,10 @@ extension PhotoDatabase {
 }
 
 // MARK: - Field Definitions
+
 extension PhotoDatabase {
-    struct HeaderLength: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 4 }
-    }
-    
-    struct TotalLength: IPKField {
-        var offset: Int { 8 }
-        var length: Int { 4 }
-    }
-    
-    struct VersionNumber: IPKField {
-        var offset: Int { 12 }
-        var length: Int { 4 }
-    }
-    
-    struct NumberOfChildren: IPKField {
-        var offset: Int { 16 }
-        var length: Int { 4 }
-    }
+    static let headerLengthField = IPKBinaryField(offset: 4, length: 4)
+    static let totalLengthField = IPKBinaryField(offset: 8, length: 4)
+    static let versionNumberField = IPKBinaryField(offset: 12, length: 4)
+    static let numberOfChildrenField = IPKBinaryField(offset: 16, length: 4)
 }

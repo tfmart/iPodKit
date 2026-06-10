@@ -1,3 +1,10 @@
+//
+//  BinaryParsingTests.swift
+//  iPodKit
+//
+//  Created by Tomas Martins on 10/02/25.
+//
+
 import Testing
 import Foundation
 @testable import iPodKit
@@ -49,13 +56,8 @@ import Foundation
 }
 
 @Test func testIPKFieldOffsetAndLength() async throws {
-    struct TestFieldWithOffset: IPKField {
-        var offset: Int { 4 }
-        var length: Int { 2 }
-    }
-    
     let data = Data([0x00, 0x00, 0x00, 0x00, 0x12, 0x34, 0x56, 0x78])
-    let field = TestFieldWithOffset()
+    let field = IPKBinaryField(offset: 4, length: 2)
     
     let value = try field.readUInt16(from: data)
     #expect(value == 0x3412) // Should read from offset 4
@@ -69,7 +71,7 @@ import Foundation
     // This test validates the basic structure parsing
 
     // Structure: magic(4) + headerLen(4) + totalLen(4) + type(4) + unknown1(4) + unknown2(4) + position(4) = 28 bytes header
-    let mhodHeader = "mhod".data(using: .ascii)!           // Offset 0-3: Magic number
+    let mhodHeader = Data("mhod".utf8)                     // Offset 0-3: Magic number
     let headerLength = Data([0x1C, 0x00, 0x00, 0x00])      // Offset 4-7: 28 bytes header
     let totalLength = Data([0x3C, 0x00, 0x00, 0x00])       // Offset 8-11: 60 bytes total
     let type = Data([0x01, 0x00, 0x00, 0x00])              // Offset 12-15: Type 1 (title)
@@ -96,23 +98,23 @@ import Foundation
     let track = ITDBTrack.self
     
     // Test a few key field structures
-    let headerLength = track.HeaderLength()
+    let headerLength = track.headerLengthField
     #expect(headerLength.offset == 4)
     #expect(headerLength.length == 4)
     
-    let totalLength = track.TotalLength()
+    let totalLength = track.totalLengthField
     #expect(totalLength.offset == 8)
     #expect(totalLength.length == 4)
     
-    let uniqueId = track.Identifier()
+    let uniqueId = track.identifierField
     #expect(uniqueId.offset == 16)
     #expect(uniqueId.length == 4)
     
-    let playCount = track.PlayCount()
+    let playCount = track.playCountField
     #expect(playCount.offset == 80)
     #expect(playCount.length == 4)
     
-    let lastPlayed = track.LastPlayed()
+    let lastPlayed = track.lastPlayedField
     #expect(lastPlayed.offset == 88)
     #expect(lastPlayed.length == 4)
 }
@@ -132,36 +134,40 @@ import Foundation
 
 @Test func testIPKErrorTypes() async throws {
     // Test public error types
-    _ = IPKError.corruptedData
-    let artworkError = IPKError.artworkNotFound
-    let dbError = IPKError.databaseError("test")
+    _ = iPodError.corruptedData
+    let artworkError = iPodError.artworkNotFound
+    let dbError = iPodError.databaseError("test")
 
     #expect(artworkError.localizedDescription.contains("Artwork"))
     #expect(dbError.localizedDescription.contains("test"))
+    #expect(dbError.recoverySuggestion != nil)
 }
 
 @Test func testMagicNumberValidationEdgeCases() async throws {
-    struct TestObject: IPKParseable {
-        init(from data: Data) throws {}
-    }
-
     // Test with empty data
     let emptyData = Data()
     #expect(throws: IPKParsingError.self) {
-        try TestObject.validateMagicNumber(from: emptyData, expectedId: "test")
+        try iTunesDB.validateMagicNumber(from: emptyData, expectedId: "test")
     }
 
     // Test with partial magic number
     let partialData = Data("te".utf8)
     #expect(throws: IPKParsingError.self) {
-        try TestObject.validateMagicNumber(from: partialData, expectedId: "test")
+        try iTunesDB.validateMagicNumber(from: partialData, expectedId: "test")
     }
 
     // Test with correct length but wrong content
     let wrongData = Data("wxyz".utf8)
     #expect(throws: IPKParsingError.self) {
-        try TestObject.validateMagicNumber(from: wrongData, expectedId: "test")
+        try iTunesDB.validateMagicNumber(from: wrongData, expectedId: "test")
     }
+}
+
+@Test func testPlayCountEntryHandlesLegacyEntryLength() async throws {
+    let legacyEntry = try PlayCountEntry(from: Data(count: 24))
+
+    #expect(legacyEntry.skipCount == 0)
+    #expect(legacyEntry.lastSkipped == 0)
 }
 
 // MARK: - Performance Tests
@@ -177,21 +183,11 @@ import Foundation
     }
     
     // Test reading from various positions
-    struct TestField: IPKField {
-        let testOffset: Int
-        var offset: Int { testOffset }
-        var length: Int { 4 }
-        
-        init(offset: Int) {
-            self.testOffset = offset
-        }
-    }
-    
     // Test reading from beginning, middle, and near end
     let positions = [0, largeSize / 2, largeSize - 8]
     
     for position in positions {
-        let field = TestField(offset: position)
+        let field = IPKBinaryField(offset: position, length: 4)
         let value = try field.readUInt32(from: largeData)
         #expect(value != 0) // Should read some non-zero pattern
     }
