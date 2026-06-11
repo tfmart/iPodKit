@@ -50,6 +50,38 @@ public struct iPod: Sendable {
     /// records.
     public let playlists: [Playlist]
 
+    /// Hardware serial number (e.g., "DCYLV2VBF0GT").
+    ///
+    /// The serial number is not stored on the iPod's disk; it is resolved from
+    /// the connected USB device and the host's iTunes/Finder device registry.
+    /// Available on macOS while the iPod is plugged in; `nil` otherwise.
+    public let serialNumber: String?
+
+    /// URL of the device icon written by iTunes (`.VolumeIcon.icns`).
+    ///
+    /// The icon renders the exact device model in its enclosure color, making
+    /// it suitable for display in place of a generic iPod image. `nil` when
+    /// the volume does not contain an icon (e.g., a copied database folder).
+    public let deviceIconURL: URL?
+
+    /// The iTunes library this iPod last synced with, when recorded.
+    public let syncSource: SyncSource?
+
+    /// On-device settings (firmware version, language, playback options).
+    ///
+    /// `nil` when the device does not store a settings file.
+    public let settings: DeviceSettings?
+
+    /// FM radio presets and last-tuned station, one entry per tuner region.
+    ///
+    /// Empty for devices without an FM radio.
+    public let radioPresets: [RadioPresets]
+
+    /// Bluetooth devices paired with the iPod.
+    ///
+    /// Empty for devices without Bluetooth support.
+    public let bluetoothDevices: [BluetoothDevice]
+
     // MARK: - Initialization
 
     /// Create an iPod instance from a supported database file or directory.
@@ -101,6 +133,14 @@ public struct iPod: Sendable {
         let tracks = Self.buildTracks(from: reader, artworkIndex: artworkIndex, iPodURL: URL(fileURLWithPath: reader.basePath), timeZone: timeZone)
         self.tracks = tracks
         self.playlists = Self.buildPlaylists(from: reader, tracks: tracks, timeZone: timeZone)
+
+        let deviceFiles = DeviceFilesReader(basePath: reader.basePath)
+        self.syncSource = deviceFiles.syncSource
+        self.settings = deviceFiles.settings
+        self.radioPresets = deviceFiles.radioPresets
+        self.bluetoothDevices = deviceFiles.bluetoothDevices
+        self.deviceIconURL = deviceFiles.deviceIconURL
+        self.serialNumber = DeviceSerialResolver.serialNumber(forVolumeAt: URL(fileURLWithPath: reader.basePath))
     }
 }
 
