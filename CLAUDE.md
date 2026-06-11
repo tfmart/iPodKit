@@ -20,8 +20,8 @@ swift test
 # Run specific test target
 swift test --filter iPodKitTests
 
-# Build and run the analyzer tool
-swift run analyze-itunes-db /path/to/iPod
+# Build and run the CLI tool
+swift run ipodkit info /path/to/iPod
 
 # Generate documentation
 swift package generate-documentation
