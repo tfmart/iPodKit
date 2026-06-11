@@ -293,13 +293,14 @@ internal extension Track {
         index: Int,
         playCountEntry: PlayCountEntry? = nil,
         artwork: ArtworkImageItem? = nil,
-        iPodURL: URL
+        iPodURL: URL,
+        timeZone: TimeZone
     ) {
         // Merge play data - prefer PlayCounts file as it has more recent data
         let playCount = playCountEntry?.playCount ?? itdbTrack.playCount
         let skipCount = playCountEntry?.skipCount ?? 0
-        let lastPlayed = playCountEntry?.lastPlayedDate ?? itdbTrack.lastPlayedDate
-        let lastSkipped = playCountEntry?.lastSkippedDate
+        let lastPlayed = playCountEntry?.lastPlayedDate(in: timeZone) ?? itdbTrack.lastPlayedDate(in: timeZone)
+        let lastSkipped = playCountEntry?.lastSkippedDate(in: timeZone)
         let rating = playCountEntry.map { Int($0.rating) / 20 } ?? itdbTrack.starRating
         let bookmark = playCountEntry.map { TimeInterval($0.bookmarkTime) / 1000.0 }
 
@@ -336,8 +337,8 @@ internal extension Track {
             lastPlayed: lastPlayed,
             lastSkipped: lastSkipped,
             bookmark: bookmark,
-            dateAdded: itdbTrack.dateAddedDate,
-            dateModified: itdbTrack.lastModifiedDate,
+            dateAdded: itdbTrack.dateAddedDate(in: timeZone),
+            dateModified: itdbTrack.lastModifiedDate(in: timeZone),
             artwork: artwork.map { Artwork(from: $0, iPodURL: iPodURL) }
         )
     }
@@ -346,12 +347,13 @@ internal extension Track {
     init(
         shuffleTrack: iTunesSDTrack,
         index: Int,
-        statEntry: iTunesStatEntry? = nil
+        statEntry: iTunesStatEntry? = nil,
+        timeZone: TimeZone
     ) {
         let playCount = statEntry?.playCount ?? 0
         let skipCount = statEntry?.skipCount ?? 0
-        let lastPlayed = statEntry?.lastPlayedDate
-        let lastSkipped = statEntry?.lastSkippedDate
+        let lastPlayed = statEntry?.lastPlayedDate(in: timeZone)
+        let lastSkipped = statEntry?.lastSkippedDate(in: timeZone)
         let rating = statEntry.map { $0.starRating } ?? 0
         let bookmark = statEntry.map { $0.bookmarkTimeInSeconds }
 

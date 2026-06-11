@@ -54,9 +54,30 @@ public struct iPod: Sendable {
 
     /// Create an iPod instance from a supported database file or directory.
     ///
-    /// - Parameter url: URL to a supported database file or containing directory.
+    /// Binary iPod databases store dates (last played, date added, and so on)
+    /// as the device's local wall-clock time without any time zone marker.
+    /// iPodKit interprets those values using `timeZone` so that every `Date`
+    /// in the public API represents the correct absolute moment in time.
+    ///
+    /// The default, `TimeZone.current`, is correct whenever the iPod's clock
+    /// was set by syncing with a computer in the same time zone as this one.
+    /// Pass an explicit time zone when reading a database that was written in
+    /// a different time zone:
+    ///
+    /// ```swift
+    /// let ipod = try iPod(
+    ///     contentsOf: databaseURL,
+    ///     timeZone: TimeZone(identifier: "America/Sao_Paulo")!
+    /// )
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - url: URL to a supported database file or containing directory.
+    ///   - timeZone: The time zone the device's clock was set to. Defaults to
+    ///     the current time zone. Has no effect on databases that store UTC
+    ///     timestamps (`iTunes Library.itlp`).
     /// - Throws: ``iPodError`` if the database files cannot be read or parsed.
-    public init(contentsOf url: URL) throws(iPodError) {
+    public init(contentsOf url: URL, timeZone: TimeZone = .current) throws(iPodError) {
         self.url = url
         let reader: iPodDBReader
         do {
@@ -77,9 +98,9 @@ public struct iPod: Sendable {
             }
         }
 
-        let tracks = Self.buildTracks(from: reader, artworkIndex: artworkIndex, iPodURL: URL(fileURLWithPath: reader.basePath))
+        let tracks = Self.buildTracks(from: reader, artworkIndex: artworkIndex, iPodURL: URL(fileURLWithPath: reader.basePath), timeZone: timeZone)
         self.tracks = tracks
-        self.playlists = Self.buildPlaylists(from: reader, tracks: tracks)
+        self.playlists = Self.buildPlaylists(from: reader, tracks: tracks, timeZone: timeZone)
     }
 }
 
@@ -98,7 +119,7 @@ private extension iPod {
         }
     }
 
-    static func buildTracks(from reader: iPodDBReader, artworkIndex: [UInt64: ArtworkImageItem], iPodURL: URL) -> [Track] {
+    static func buildTracks(from reader: iPodDBReader, artworkIndex: [UInt64: ArtworkImageItem], iPodURL: URL, timeZone: TimeZone) -> [Track] {
         if let iTunesLibrary = reader.iTunesLibrary {
             return iTunesLibrary.tracks.enumerated().map { index, track in
                 let trackId = UInt64(bitPattern: track.pid)
@@ -109,21 +130,21 @@ private extension iPod {
         if let iTunesDB = reader.iTunesDB {
             let playCounts = reader.playCountsDB
             return iTunesDB.tracks.enumerated().map { index, track in
-                return Track(track, index: index, playCountEntry: playCounts?.playCountEntry(for: index), artwork: artworkIndex[track.dbid], iPodURL: iPodURL)
+                return Track(track, index: index, playCountEntry: playCounts?.playCountEntry(for: index), artwork: artworkIndex[track.dbid], iPodURL: iPodURL, timeZone: timeZone)
             }
         }
 
         if let shuffleDB = reader.shuffleDB {
             let stats = reader.shuffleStats
             return shuffleDB.tracks.enumerated().map { index, track in
-                Track(shuffleTrack: track, index: index, statEntry: stats?.statEntry(for: index))
+                Track(shuffleTrack: track, index: index, statEntry: stats?.statEntry(for: index), timeZone: timeZone)
             }
         }
 
         return []
     }
 
-    static func buildPlaylists(from reader: iPodDBReader, tracks: [Track]) -> [Playlist] {
+    static func buildPlaylists(from reader: iPodDBReader, tracks: [Track], timeZone: TimeZone) -> [Playlist] {
         if let iTunesLibrary = reader.iTunesLibrary {
             let tracksById = Dictionary(tracks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             return iTunesLibrary.playlists.map { playlist in
@@ -139,7 +160,7 @@ private extension iPod {
             let tracksByUniqueId = Dictionary(trackPairs, uniquingKeysWith: { first, _ in first })
             return iTunesDB.playlists.map { playlist in
                 let playlistTracks = playlist.trackIds.compactMap { tracksByUniqueId[$0] }
-                return Playlist(playlist, tracks: playlistTracks)
+                return Playlist(playlist, tracks: playlistTracks, timeZone: timeZone)
             }
         }
 

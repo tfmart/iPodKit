@@ -132,15 +132,8 @@ private extension Playlist {
 internal extension Playlist {
 
     /// Create a Playlist from an ITDBPlaylist.
-    init(_ itdbPlaylist: ITDBPlaylist, tracks: [Track]? = nil) {
-        let timestamp: Date?
-        if itdbPlaylist.timestamp > 0 {
-            let macEpochOffset: TimeInterval = 2082844800
-            let unixTimestamp = TimeInterval(itdbPlaylist.timestamp) - macEpochOffset
-            timestamp = Date(timeIntervalSince1970: unixTimestamp)
-        } else {
-            timestamp = nil
-        }
+    init(_ itdbPlaylist: ITDBPlaylist, tracks: [Track]? = nil, timeZone: TimeZone) {
+        let timestamp = IPKTimestamp.date(fromMacTimestamp: itdbPlaylist.timestamp, in: timeZone)
 
         let resolvedTracks = tracks ?? []
         self.init(
