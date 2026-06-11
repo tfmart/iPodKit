@@ -1,5 +1,5 @@
 {
-  "originHash" : "e254b03e2114421b6748888d7511e49c0692f03240113b7115a9a6ab4b17eb4d",
+  "originHash" : "7e6cae1f0b76eecabe5b86d242c795d1f8b605d5ed0f054596dbaaea506ff814",
   "pins" : [
     {
       "identity" : "sqlite.swift",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "392dd6058624d9f6c5b4c769d165ddd8c7293394",
         "version" : "0.15.4"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser.git",
+      "state" : {
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
       }
     },
     {
