@@ -198,7 +198,7 @@ import Foundation
         let dummyURL = URL(fileURLWithPath: "/")
         for (index, itdbTrack) in iTunesDB.tracks.enumerated() {
             let playCountEntry = playCounts?.playCountEntry(for: index)
-            let track = Track(itdbTrack, index: index, playCountEntry: playCountEntry, iPodURL: dummyURL)
+            let track = Track(itdbTrack, index: index, playCountEntry: playCountEntry, iPodURL: dummyURL, timeZone: TimeZone(secondsFromGMT: 0)!)
             unifiedTracks.append(track)
         }
     }
@@ -251,7 +251,7 @@ import Foundation
     // Build unified tracks and playlists using the same relationship as iPod.
     let dummyURL = URL(fileURLWithPath: "/")
     let unifiedTracks = iTunesDB.tracks.enumerated().map { index, track in
-        Track(track, index: index, iPodURL: dummyURL)
+        Track(track, index: index, iPodURL: dummyURL, timeZone: TimeZone(secondsFromGMT: 0)!)
     }
     let tracksByUniqueId = Dictionary(
         zip(iTunesDB.tracks.map(\.uniqueId), unifiedTracks).map { pair in (pair.0, pair.1) },
@@ -260,7 +260,7 @@ import Foundation
 
     for itdbPlaylist in playlists {
         let playlistTracks = itdbPlaylist.trackIds.compactMap { tracksByUniqueId[$0] }
-        let unifiedPlaylist = Playlist(itdbPlaylist, tracks: playlistTracks)
+        let unifiedPlaylist = Playlist(itdbPlaylist, tracks: playlistTracks, timeZone: TimeZone(secondsFromGMT: 0)!)
         #expect(unifiedPlaylist.id > 0, "Playlist should have a valid ID")
         #expect(unifiedPlaylist.trackIds == unifiedPlaylist.tracks.map(\.id), "Playlist track IDs should match resolved tracks")
 

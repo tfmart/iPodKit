@@ -142,10 +142,10 @@ import Foundation
         
         // Test date conversion if entry has been played
         if firstEntry.lastPlayed > 0 {
-            let lastPlayedDate = firstEntry.lastPlayedDate
+            let lastPlayedDate = firstEntry.lastPlayedDate(in: TimeZone(secondsFromGMT: 0)!)
             #expect(lastPlayedDate != nil, "Should convert valid timestamp to date")
             
-            let formatted = firstEntry.lastPlayedFormatted
+            let formatted = firstEntry.lastPlayedFormatted(in: TimeZone(secondsFromGMT: 0)!)
             #expect(formatted != "Never played", "Should format valid last played date")
         }
     }
@@ -175,7 +175,7 @@ import Foundation
                         let track = tracks[index]
                         print("   - \(track.displayName)")
                         print("     Play count: \(entry.playCount)")
-                        print("     Last played: \(entry.lastPlayedFormatted)")
+                        print("     Last played: \(entry.lastPlayedFormatted(in: TimeZone(secondsFromGMT: 0)!))")
                         if entry.starRating > 0 {
                             print("     Rating: \(entry.starRating)/5 stars")
                         }
@@ -258,10 +258,10 @@ import Foundation
     
     // Test last played date conversion
     if track.lastPlayed > 0 {
-        let lastPlayedDate = track.lastPlayedDate
+        let lastPlayedDate = track.lastPlayedDate(in: TimeZone(secondsFromGMT: 0)!)
         #expect(lastPlayedDate != nil, "Should convert valid timestamp to date")
         
-        let formatted = track.lastPlayedFormatted
+        let formatted = track.lastPlayedFormatted(in: TimeZone(secondsFromGMT: 0)!)
         #expect(formatted != "Never played", "Should format valid last played date")
     }
     

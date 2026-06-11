@@ -196,22 +196,23 @@ import Foundation
     for track in tracks.prefix(20) {
         if track.lastPlayed > 0 {
             playedTracks += 1
-            
-            // Test Mac epoch conversion
+
+            // The stored value is wall-clock time, so converting in GMT must
+            // equal the raw Mac epoch arithmetic.
             let macEpochOffset: TimeInterval = 2082844800
             let unixTimestamp = TimeInterval(track.lastPlayed) - macEpochOffset
             let expectedDate = Date(timeIntervalSince1970: unixTimestamp)
-            
-            if let convertedDate = track.lastPlayedDate {
-                #expect(abs(convertedDate.timeIntervalSince1970 - expectedDate.timeIntervalSince1970) < 1.0, 
+
+            if let convertedDate = track.lastPlayedDate(in: TimeZone(secondsFromGMT: 0)!) {
+                #expect(abs(convertedDate.timeIntervalSince1970 - expectedDate.timeIntervalSince1970) < 1.0,
                        "Converted date should match expected calculation")
                 validTimestamps += 1
             }
         }
-        
+
         if track.lastModified > 0 {
             // Test last modified date conversion
-            if let modifiedDate = track.lastModifiedDate {
+            if let modifiedDate = track.lastModifiedDate(in: TimeZone(secondsFromGMT: 0)!) {
                 #expect(modifiedDate.timeIntervalSince1970 > 0, "Modified date should be valid")
             }
         }
