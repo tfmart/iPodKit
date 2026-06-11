@@ -175,13 +175,12 @@ self.uniqueId = try Self.UniqueId().readUInt32(from: data)
 
 ### Date Conversion
 
-iTunes uses Mac epoch (1904). Convert to Unix:
+All timestamp conversion goes through `IPKTimestamp` (`Internal/Core/IPKTimestamp.swift`). Never hand-roll epoch arithmetic at call sites. The two storage formats are **not** anchored the same way:
 
-```swift
-let macEpochOffset: TimeInterval = 2082844800
-let unixTimestamp = TimeInterval(timestamp) - macEpochOffset
-return Date(timeIntervalSince1970: unixTimestamp)
-```
+- **Binary databases** (iTunesDB, Play Counts, iTunesStats, playlists): Mac epoch (1904), holding the device's **local wall-clock time**. Convert with `IPKTimestamp.date(fromMacTimestamp:in:)`, passing the device time zone (threaded from `iPod(contentsOf:timeZone:)`).
+- **SQLite databases** (`iTunes Library.itlp`): Apple/Core Data epoch (2001), in **true UTC**. Convert with `IPKTimestamp.date(fromAppleTimestamp:)`.
+
+This was verified empirically: the same play appears in `Play Counts` and `Dynamic.itdb` with values differing by exactly the device's UTC offset. Every public `Date` must represent the true absolute instant.
 
 ### Documentation Style
 
