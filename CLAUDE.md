@@ -95,6 +95,12 @@ Each database type has a dedicated parser:
 - `iTunesShuffle` - Shuffle order
 - `iTunesPState` - Playback state
 
+**Device files (`Internal/Databases/Device/`, loaded by `DeviceFilesReader`):**
+- `iTunesPrefsFile` - Sync source (library owner + computer name, `frpd` binary)
+- `iPodSettingsFile` - On-device settings XML
+- Radio presets and Bluetooth paired devices (plists under `iPod_Control/Device/`)
+- `DeviceSerialResolver` - Hardware serial via IOKit + host iTunes device registry (macOS only)
+
 ### Binary Parsing Framework
 
 Protocol-based architecture for type-safe binary parsing:
@@ -115,7 +121,11 @@ Sources/iPodKit/
 │   │   ├── Track.swift        # Unified track model
 │   │   ├── Playlist.swift     # Unified playlist model
 │   │   ├── Artwork.swift      # Album artwork model
-│   │   └── MediaType.swift    # Track media type enum
+│   │   ├── MediaType.swift    # Track media type enum
+│   │   ├── SyncSource.swift   # Last-synced iTunes library info
+│   │   ├── DeviceSettings.swift # On-device settings
+│   │   ├── RadioPresets.swift # FM radio presets per region
+│   │   └── BluetoothDevice.swift # Paired Bluetooth devices
 │   └── Errors/
 │       └── iPodError.swift     # Public error types
 └── Internal/
@@ -128,13 +138,16 @@ Sources/iPodKit/
     │   ├── Standard/          # iTunesDB, PlayCounts, ITDBTrack
     │   ├── Shuffle/           # iTunesSD, iTunesStats, etc.
     │   ├── Media/             # ArtworkDatabase, PhotoDatabase
-    │   └── Playlists/         # ITDBPlaylist, OTGPlaylist
+    │   ├── Playlists/         # ITDBPlaylist, OTGPlaylist
+    │   └── Device/            # iTunesPrefsFile, iPodSettingsFile
     ├── Models/
     │   └── EqualizerPresets.swift
     └── Readers/
         ├── iPodDBReader.swift
         ├── iTunesDBReader.swift
-        └── iTunesLibraryReader.swift
+        ├── iTunesLibraryReader.swift
+        ├── DeviceFilesReader.swift
+        └── DeviceSerialResolver.swift
 ```
 
 ## Development Patterns
