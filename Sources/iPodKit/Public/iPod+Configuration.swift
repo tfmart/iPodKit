@@ -38,7 +38,11 @@ extension iPod {
         /// timestamps (`iTunes Library.itlp`).
         public var timeZone: TimeZone
 
-        /// Create a configuration with default options.
+        /// Create a configuration.
+        ///
+        /// - Parameter timeZone: The time zone the device's clock was set to.
+        ///   Defaults to the current time zone, which is correct for an iPod
+        ///   synced with this computer. See ``timeZone``.
         public init(timeZone: TimeZone = .current) {
             self.timeZone = timeZone
         }

@@ -167,10 +167,20 @@ internal extension Playlist {
 // MARK: - Equatable & Hashable
 
 extension Playlist {
+    /// Two playlists are equal when they have the same ``id``, regardless of
+    /// other field values.
+    ///
+    /// - Parameters:
+    ///   - lhs: A playlist to compare.
+    ///   - rhs: Another playlist to compare.
+    /// - Returns: `true` if both playlists have the same ``id``.
     public static func == (lhs: Playlist, rhs: Playlist) -> Bool {
         lhs.id == rhs.id
     }
 
+    /// Hashes the playlist's ``id``, matching the equality definition.
+    ///
+    /// - Parameter hasher: The hasher to use when combining the playlist's identity.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

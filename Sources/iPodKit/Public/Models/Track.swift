@@ -447,10 +447,20 @@ internal extension Track {
 // MARK: - Equatable & Hashable
 
 extension Track {
+    /// Two tracks are equal when they have the same ``id``, regardless of
+    /// other field values.
+    ///
+    /// - Parameters:
+    ///   - lhs: A track to compare.
+    ///   - rhs: Another track to compare.
+    /// - Returns: `true` if both tracks have the same ``id``.
     public static func == (lhs: Track, rhs: Track) -> Bool {
         lhs.id == rhs.id
     }
 
+    /// Hashes the track's ``id``, matching the equality definition.
+    ///
+    /// - Parameter hasher: The hasher to use when combining the track's identity.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

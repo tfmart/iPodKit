@@ -39,7 +39,12 @@ public enum MediaType: UInt32, Sendable, CaseIterable, CustomStringConvertible {
     /// Unknown or unspecified media type (could be audio or video)
     case unknown = 0x00000000
 
-    /// Initialize from a raw value, defaulting to unknown for unrecognized values
+    /// Creates a media type from a raw database value.
+    ///
+    /// Unlike the synthesized `RawRepresentable` initializer, this never
+    /// fails: unrecognized values map to ``unknown``.
+    ///
+    /// - Parameter rawValue: The media type code stored in the iPod database.
     public init(rawValue: UInt32) {
         switch rawValue {
         case 0x00000001: self = .audio
@@ -68,6 +73,7 @@ public enum MediaType: UInt32, Sendable, CaseIterable, CustomStringConvertible {
         }
     }
 
+    /// The same value as ``displayName``, for `CustomStringConvertible`.
     public var description: String {
         displayName
     }

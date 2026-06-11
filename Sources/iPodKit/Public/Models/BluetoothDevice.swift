@@ -30,6 +30,7 @@ public struct BluetoothDevice: Sendable, Hashable, Identifiable {
     /// Whether the device supports remote control (AVRCP).
     public let supportsRemoteControl: Bool
 
+    /// Stable identity for `Identifiable`, backed by ``address``.
     public var id: String { address }
 
     internal init(address: String, name: String?, supportsAudio: Bool, supportsRemoteControl: Bool) {

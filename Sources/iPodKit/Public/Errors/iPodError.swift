@@ -32,6 +32,7 @@ public enum iPodError: Error, Sendable {
 }
 
 extension iPodError: LocalizedError {
+    /// A human-readable description of the error, suitable for display.
     public var errorDescription: String? {
         switch self {
         case .invalidPath:
