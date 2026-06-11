@@ -57,6 +57,7 @@ import Foundation
 /// - ``playCount``
 /// - ``skipCount``
 /// - ``lastPlayed``
+/// - ``lastSkipped``
 /// - ``rating``
 /// - ``bookmark``
 ///
@@ -71,7 +72,18 @@ import Foundation
 /// - ``discNumber``
 /// - ``totalDiscs``
 /// - ``bpm``
+/// - ``isCompilation``
 /// - ``mediaType``
+///
+/// ### Library Dates
+/// - ``dateAdded``
+/// - ``dateModified``
+///
+/// ### Playback Adjustments
+/// - ``volumeAdjustment``
+/// - ``startTime``
+/// - ``stopTime``
+/// - ``soundCheck``
 ///
 /// ### Artwork
 /// - ``artwork``

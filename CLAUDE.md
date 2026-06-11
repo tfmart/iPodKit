@@ -42,10 +42,15 @@ iPodKit follows three core principles:
 The primary public interface consists of:
 
 - **`iPod`** - Main entry point, the facade that abstracts all complexity
+- **`iPod.Configuration`** - Advanced loading options (e.g., device time zone)
 - **`Track`** - Unified track model combining data from multiple sources
 - **`Playlist`** - Unified playlist model
 - **`Artwork`** - Album artwork with multiple size options
 - **`MediaType`** - Track media type (audio, video, podcast, etc.)
+- **`SyncSource`** - iTunes library the device last synced with
+- **`DeviceSettings`** - On-device settings (firmware, language, playback)
+- **`RadioPresets`** - FM radio presets per tuner region
+- **`BluetoothDevice`** - Paired Bluetooth devices
 - **`iPodError`** - Public error types for consumers
 
 ```swift

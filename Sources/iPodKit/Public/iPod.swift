@@ -24,6 +24,37 @@ import Foundation
 ///     print("\(playlist.name): \(playlist.tracks.count) tracks")
 /// }
 /// ```
+///
+/// When the database lives on a mounted iPod volume, device-level information
+/// is loaded as well:
+///
+/// ```swift
+/// print(ipod.serialNumber ?? "Unknown serial")
+/// print(ipod.settings?.firmwareVersion ?? "Unknown firmware")
+/// print("Synced with \(ipod.syncSource?.computerName ?? "unknown computer")")
+/// ```
+///
+/// ## Topics
+///
+/// ### Loading a Database
+/// - ``init(contentsOf:configuration:)``
+/// - ``Configuration``
+/// - ``url``
+///
+/// ### Library Content
+/// - ``tracks``
+/// - ``playlists``
+///
+/// ### Device Information
+/// - ``deviceName``
+/// - ``serialNumber``
+/// - ``deviceIconURL``
+/// - ``syncSource``
+/// - ``settings``
+///
+/// ### Device Extras
+/// - ``radioPresets``
+/// - ``bluetoothDevices``
 public struct iPod: Sendable {
 
     // MARK: - Public Properties

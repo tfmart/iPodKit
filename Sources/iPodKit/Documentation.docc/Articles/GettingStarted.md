@@ -72,6 +72,24 @@ if let artwork = ipod.tracks.first?.artwork {
 Use ``Artwork/sizes`` and ``Artwork/image(size:)`` when you need a specific
 thumbnail size.
 
+## Read Device Information
+
+When the database comes from a mounted iPod volume, device-level data is
+available as well:
+
+```swift
+print(ipod.serialNumber ?? "Unknown serial")
+print(ipod.settings?.firmwareVersion ?? "Unknown firmware")
+print("Synced with \(ipod.syncSource?.computerName ?? "unknown computer")")
+
+for device in ipod.bluetoothDevices {
+    print("Paired: \(device.name ?? device.address)")
+}
+```
+
+See ``DeviceSettings``, ``SyncSource``, ``RadioPresets``, and
+``BluetoothDevice`` for everything that is surfaced.
+
 ## Handle Errors
 
 iPodKit throws ``iPodError`` when database files cannot be found or parsed.

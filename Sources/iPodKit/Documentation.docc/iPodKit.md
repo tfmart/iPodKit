@@ -35,6 +35,8 @@ data when available:
 - playlists
 - play counts, ratings, skips, and last-played dates
 - album artwork metadata and image data
+- device information: serial number, settings, sync source, and device icon
+- FM radio presets and paired Bluetooth devices
 
 ## Topics
 
@@ -45,6 +47,7 @@ data when available:
 ### Essentials
 
 - ``iPod``
+- ``iPod/Configuration``
 - ``Track``
 - ``Playlist``
 
@@ -52,6 +55,13 @@ data when available:
 
 - ``Artwork``
 - ``MediaType``
+
+### Device Information
+
+- ``SyncSource``
+- ``DeviceSettings``
+- ``RadioPresets``
+- ``BluetoothDevice``
 
 ### Errors
 

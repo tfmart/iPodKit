@@ -22,15 +22,25 @@ public struct DeviceSettings: Sendable, Hashable {
 
     /// How tracks are shuffled during playback.
     public enum ShuffleMode: String, Sendable {
+        /// Tracks play in their original order.
         case off
+
+        /// Individual songs play in random order.
         case songs
+
+        /// Whole albums play in random order, keeping each album's track order.
         case albums
     }
 
     /// How playback repeats.
     public enum RepeatMode: String, Sendable {
+        /// Playback stops at the end of the queue.
         case off
+
+        /// The current track repeats indefinitely.
         case one
+
+        /// The whole queue starts over after the last track.
         case all
     }
 

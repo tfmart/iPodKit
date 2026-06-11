@@ -38,3 +38,11 @@
 ///
 /// Additional data sources (play counts, artwork, EQ presets) are merged
 /// automatically when present.
+///
+/// ## Device Information
+///
+/// When reading a mounted iPod volume, iPodKit also surfaces device-level
+/// data: the hardware serial number, the device icon, on-device settings
+/// (``DeviceSettings``), the last sync source (``SyncSource``), FM radio
+/// presets (``RadioPresets``), and paired Bluetooth devices
+/// (``BluetoothDevice``).
