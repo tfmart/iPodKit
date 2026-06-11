@@ -40,25 +40,19 @@ internal struct PlayCountEntry: IPKParseable, Sendable {
 }
 
 extension PlayCountEntry {
-    /// Last played date converted from Mac epoch timestamp
-    var lastPlayedDate: Date? {
-        guard lastPlayed > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(lastPlayed) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
+    /// Last played date. The stored value is device-local wall-clock time.
+    func lastPlayedDate(in timeZone: TimeZone) -> Date? {
+        IPKTimestamp.date(fromMacTimestamp: lastPlayed, in: timeZone)
     }
-    
-    /// Last skipped date converted from Mac epoch timestamp
-    var lastSkippedDate: Date? {
-        guard lastSkipped > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(lastSkipped) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
+
+    /// Last skipped date. The stored value is device-local wall-clock time.
+    func lastSkippedDate(in timeZone: TimeZone) -> Date? {
+        IPKTimestamp.date(fromMacTimestamp: lastSkipped, in: timeZone)
     }
-    
+
     /// Formatted last played date string
-    var lastPlayedFormatted: String {
-        guard let date = lastPlayedDate else { return "Never played" }
+    func lastPlayedFormatted(in timeZone: TimeZone) -> String {
+        guard let date = lastPlayedDate(in: timeZone) else { return "Never played" }
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short

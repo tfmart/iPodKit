@@ -67,7 +67,7 @@ import Foundation
 /// - ``durationFormatted``
 /// - ``starRating``
 /// - ``displayName``
-/// - ``lastPlayedDate``
+/// - ``lastPlayedDate(in:)``
 /// - ``fileSizeFormatted``
 /// 
 /// Reference: [iTunes Database Track Item Specification](http://www.ipodlinux.org/ITunesDB/#Track_Item)
@@ -220,38 +220,28 @@ extension ITDBTrack {
         return "Unknown Track"
     }
     
-    /// Last played date converted from Mac epoch timestamp
-    var lastPlayedDate: Date? {
-        guard lastPlayed > 0 else { return nil }
-        // Mac epoch starts January 1, 1904 (vs Unix epoch January 1, 1970)
-        let macEpochOffset: TimeInterval = 2082844800 // seconds between 1904 and 1970
-        let unixTimestamp = TimeInterval(lastPlayed) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
+    /// Last played date. The stored value is device-local wall-clock time.
+    func lastPlayedDate(in timeZone: TimeZone) -> Date? {
+        IPKTimestamp.date(fromMacTimestamp: lastPlayed, in: timeZone)
     }
-    
+
     /// Formatted last played date string
-    var lastPlayedFormatted: String {
-        guard let date = lastPlayedDate else { return "Never played" }
+    func lastPlayedFormatted(in timeZone: TimeZone) -> String {
+        guard let date = lastPlayedDate(in: timeZone) else { return "Never played" }
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-    
-    /// Date when track was last modified
-    var lastModifiedDate: Date? {
-        guard lastModified > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(lastModified) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
+
+    /// Date when track was last modified. The stored value is device-local wall-clock time.
+    func lastModifiedDate(in timeZone: TimeZone) -> Date? {
+        IPKTimestamp.date(fromMacTimestamp: lastModified, in: timeZone)
     }
 
-    /// Date when track was added to the library
-    var dateAddedDate: Date? {
-        guard dateAdded > 0 else { return nil }
-        let macEpochOffset: TimeInterval = 2082844800
-        let unixTimestamp = TimeInterval(dateAdded) - macEpochOffset
-        return Date(timeIntervalSince1970: unixTimestamp)
+    /// Date when track was added to the library. The stored value is device-local wall-clock time.
+    func dateAddedDate(in timeZone: TimeZone) -> Date? {
+        IPKTimestamp.date(fromMacTimestamp: dateAdded, in: timeZone)
     }
 
     /// Whether this track is part of a compilation album

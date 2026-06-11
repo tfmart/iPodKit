@@ -16,13 +16,9 @@ internal struct ITLibTrack: Sendable {
     let playCount: Int
     let datePlayed: Int64  // Core Data timestamp (seconds since Jan 1, 2001)
 
-    /// Last played date converted from Core Data timestamp
+    /// Last played date. The stored value is true UTC, so no time zone is needed.
     var lastPlayedDate: Date? {
-        guard datePlayed > 0 else { return nil }
-        // Core Data timestamp: seconds since Jan 1, 2001
-        // Jan 1, 2001 00:00:00 UTC = Unix timestamp 978307200
-        let coreDataEpochOffset: TimeInterval = 978307200
-        return Date(timeIntervalSince1970: Double(datePlayed) + coreDataEpochOffset)
+        IPKTimestamp.date(fromAppleTimestamp: datePlayed)
     }
 
     /// Track duration in seconds
