@@ -386,34 +386,47 @@ internal extension Track {
         )
     }
 
+    /// Empty-to-nil helper for text fields where "" means "not available".
+    private static func nonEmpty(_ value: String?) -> String? {
+        guard let value, !value.isEmpty else { return nil }
+        return value
+    }
+
     /// Create a Track from an iTunes Library track.
     init(_ itLibTrack: ITLibTrack, index: Int, artwork: ArtworkImageItem? = nil, iPodURL: URL) {
         self.init(
             id: UInt64(bitPattern: itLibTrack.pid),
             index: index,
-            title: itLibTrack.title.isEmpty ? nil : itLibTrack.title,
-            artist: itLibTrack.artist.isEmpty ? nil : itLibTrack.artist,
-            album: itLibTrack.album.isEmpty ? nil : itLibTrack.album,
-            genre: nil,
-            composer: nil,
-            comment: nil,
-            grouping: nil,
-            location: nil,
+            title: Self.nonEmpty(itLibTrack.title),
+            artist: Self.nonEmpty(itLibTrack.artist),
+            album: Self.nonEmpty(itLibTrack.album),
+            genre: Self.nonEmpty(itLibTrack.genre),
+            composer: Self.nonEmpty(itLibTrack.composer),
+            comment: Self.nonEmpty(itLibTrack.comment),
+            grouping: Self.nonEmpty(itLibTrack.grouping),
+            location: Self.nonEmpty(itLibTrack.location),
             duration: itLibTrack.durationInSeconds,
-            fileSize: 0,
-            bitrate: nil,
-            sampleRate: nil,
-            trackNumber: nil,
-            totalTracks: nil,
-            year: nil,
+            fileSize: Int(itLibTrack.fileSize),
+            bitrate: itLibTrack.bitrate == 0 ? nil : itLibTrack.bitrate,
+            sampleRate: itLibTrack.sampleRate == 0 ? nil : itLibTrack.sampleRate,
+            trackNumber: itLibTrack.trackNumber == 0 ? nil : itLibTrack.trackNumber,
+            totalTracks: itLibTrack.trackCount == 0 ? nil : itLibTrack.trackCount,
+            year: itLibTrack.year == 0 ? nil : itLibTrack.year,
+            discNumber: itLibTrack.discNumber == 0 ? nil : itLibTrack.discNumber,
+            totalDiscs: itLibTrack.discCount == 0 ? nil : itLibTrack.discCount,
+            bpm: itLibTrack.bpm == 0 ? nil : itLibTrack.bpm,
+            isCompilation: itLibTrack.isCompilation,
+            mediaType: itLibTrack.mediaType,
+            startTime: itLibTrack.startTimeMs == 0 ? nil : itLibTrack.startTimeMs / 1000.0,
+            stopTime: itLibTrack.stopTimeMs == 0 ? nil : itLibTrack.stopTimeMs / 1000.0,
             playCount: itLibTrack.playCount,
-            skipCount: 0,
-            rating: 0,
+            skipCount: itLibTrack.skipCount,
+            rating: itLibTrack.starRating,
             lastPlayed: itLibTrack.lastPlayedDate,
-            lastSkipped: nil,
-            bookmark: nil,
+            lastSkipped: itLibTrack.lastSkippedDate,
+            bookmark: itLibTrack.bookmarkTimeMs == 0 ? nil : itLibTrack.bookmarkTimeMs / 1000.0,
             dateAdded: nil,
-            dateModified: nil,
+            dateModified: itLibTrack.dateModifiedDate,
             artwork: artwork.map { Artwork(from: $0, iPodURL: iPodURL) }
         )
     }

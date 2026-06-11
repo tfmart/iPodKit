@@ -82,67 +82,121 @@ final class iTunesLibraryReader: Sendable {
             // Attach Dynamic database
             try db.execute("ATTACH DATABASE \(sqliteStringLiteral(dynamicPath.path)) AS dynamic")
 
-            // First, get tracks from item table
-            let itemTable = Table("item")
-            let pid = Expression<Int64>("pid")
-            let title = Expression<String?>("title")
-            let artist = Expression<String?>("artist")
-            let album = Expression<String?>("album")
-            let totalTimeMs = Expression<Double?>("total_time_ms")
-            let isSong = Expression<Int64?>("is_song")
-
-            // Query songs from Library database
-            let songQuery = itemTable
-                .filter(isSong == 1)
-                .select(pid, title, artist, album, totalTimeMs)
-
-            var trackMap: [Int64: ITLibTrack] = [:]
-
-            for row in try db.prepare(songQuery) {
-                let track = ITLibTrack(
-                    pid: row[pid],
-                    title: row[title] ?? "",
-                    artist: row[artist] ?? "",
-                    album: row[album] ?? "",
-                    totalTimeMs: row[totalTimeMs] ?? 0,
-                    playCount: 0,
-                    datePlayed: 0
-                )
-                trackMap[row[pid]] = track
-            }
-
-            // Now query play stats from Dynamic database using raw SQL
-            // (attached database access works better with raw SQL)
-            let statsSQL = "SELECT item_pid, play_count_user, date_played FROM dynamic.item_stats"
-            for row in try db.prepare(statsSQL) {
-                if let itemPid = row[0] as? Int64,
-                   var track = trackMap[itemPid] {
-                    let playCount = (row[1] as? Int64) ?? 0
-                    let datePlayed = (row[2] as? Int64) ?? 0
-
-                    // Create updated track with play stats
-                    track = ITLibTrack(
-                        pid: track.pid,
-                        title: track.title,
-                        artist: track.artist,
-                        album: track.album,
-                        totalTimeMs: track.totalTimeMs,
-                        playCount: Int(playCount),
-                        datePlayed: datePlayed
-                    )
-                    trackMap[itemPid] = track
+            // Attach Locations database when present (file paths and sizes)
+            let locationsPath = libraryPath.deletingLastPathComponent().appendingPathComponent("Locations.itdb")
+            var hasLocations = false
+            if FileManager.default.fileExists(atPath: locationsPath.path) {
+                do {
+                    try db.execute("ATTACH DATABASE \(sqliteStringLiteral(locationsPath.path)) AS locations")
+                    hasLocations = true
+                } catch {
+                    // Locations are optional - tracks still load without file paths
                 }
             }
 
-            // Convert to array and sort by date played (most recent first)
-            let tracks = Array(trackMap.values).sorted { track1, track2 in
-                track1.datePlayed > track2.datePlayed
+            let locationColumns = hasLocations
+                ? "bl.path || '/' || l.location, l.file_size"
+                : "NULL, NULL"
+            let locationJoins = hasLocations
+                ? """
+                  LEFT JOIN locations.location l ON l.item_pid = i.pid
+                  LEFT JOIN locations.base_location bl ON bl.id = l.base_location_id
+                  """
+                : ""
+
+            let sql = """
+                SELECT i.pid, i.title, i.artist, i.album, i.album_artist, g.genre,
+                       i.composer, i.comment, i.grouping,
+                       i.total_time_ms, i.start_time_ms, i.stop_time_ms,
+                       i.track_number, i.track_count, i.disc_number, i.disc_count,
+                       i.year, i.bpm, i.is_compilation, i.date_modified,
+                       i.is_song, i.is_movie, i.is_podcast, i.is_audio_book,
+                       i.is_music_video, i.is_tv_show,
+                       a.bit_rate, a.sample_rate,
+                       \(locationColumns),
+                       s.play_count_user, s.skip_count_user, s.user_rating,
+                       s.date_played, s.date_skipped, s.bookmark_time_ms
+                FROM item i
+                LEFT JOIN genre_map g ON g.id = i.genre_id
+                LEFT JOIN avformat_info a ON a.item_pid = i.pid
+                LEFT JOIN dynamic.item_stats s ON s.item_pid = i.pid
+                \(locationJoins)
+                WHERE i.is_digital_booklet = 0 AND i.is_tone = 0 AND i.is_ringtone = 0
+                """
+
+            func int(_ value: Binding?) -> Int { Int((value as? Int64) ?? 0) }
+            func double(_ value: Binding?) -> Double {
+                if let d = value as? Double { return d }
+                return Double((value as? Int64) ?? 0)
             }
 
-            return tracks
+            var tracks: [ITLibTrack] = []
+            for row in try db.prepare(sql) {
+                let track = ITLibTrack(
+                    pid: (row[0] as? Int64) ?? 0,
+                    title: (row[1] as? String) ?? "",
+                    artist: (row[2] as? String) ?? "",
+                    album: (row[3] as? String) ?? "",
+                    albumArtist: row[4] as? String,
+                    genre: row[5] as? String,
+                    composer: row[6] as? String,
+                    comment: row[7] as? String,
+                    grouping: row[8] as? String,
+                    totalTimeMs: double(row[9]),
+                    startTimeMs: double(row[10]),
+                    stopTimeMs: double(row[11]),
+                    trackNumber: int(row[12]),
+                    trackCount: int(row[13]),
+                    discNumber: int(row[14]),
+                    discCount: int(row[15]),
+                    year: int(row[16]),
+                    bpm: int(row[17]),
+                    isCompilation: int(row[18]) == 1,
+                    mediaType: mediaType(
+                        isSong: int(row[20]) == 1,
+                        isMovie: int(row[21]) == 1,
+                        isPodcast: int(row[22]) == 1,
+                        isAudiobook: int(row[23]) == 1,
+                        isMusicVideo: int(row[24]) == 1,
+                        isTVShow: int(row[25]) == 1
+                    ),
+                    dateModified: (row[19] as? Int64) ?? 0,
+                    bitrate: int(row[26]),
+                    sampleRate: Int(double(row[27])),
+                    location: row[28] as? String,
+                    fileSize: (row[29] as? Int64) ?? 0,
+                    playCount: int(row[30]),
+                    skipCount: int(row[31]),
+                    rating: int(row[32]),
+                    datePlayed: (row[33] as? Int64) ?? 0,
+                    dateSkipped: (row[34] as? Int64) ?? 0,
+                    bookmarkTimeMs: double(row[35])
+                )
+                tracks.append(track)
+            }
+
+            // Sort by date played (most recent first), preserving prior behavior
+            return tracks.sorted { $0.datePlayed > $1.datePlayed }
         } catch {
             throw IPKParsingError.databaseError(error.localizedDescription)
         }
+    }
+
+    private static func mediaType(
+        isSong: Bool,
+        isMovie: Bool,
+        isPodcast: Bool,
+        isAudiobook: Bool,
+        isMusicVideo: Bool,
+        isTVShow: Bool
+    ) -> MediaType {
+        if isPodcast { return .podcast }
+        if isAudiobook { return .audiobook }
+        if isMusicVideo { return .musicVideo }
+        if isTVShow { return .tvShow }
+        if isMovie { return .video }
+        if isSong { return .audio }
+        return .unknown
     }
 
     private static func sqliteStringLiteral(_ value: String) -> String {
