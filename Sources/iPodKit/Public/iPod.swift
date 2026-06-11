@@ -86,30 +86,14 @@ public struct iPod: Sendable {
 
     /// Create an iPod instance from a supported database file or directory.
     ///
-    /// Binary iPod databases store dates (last played, date added, and so on)
-    /// as the device's local wall-clock time without any time zone marker.
-    /// iPodKit interprets those values using `timeZone` so that every `Date`
-    /// in the public API represents the correct absolute moment in time.
-    ///
-    /// The default, `TimeZone.current`, is correct whenever the iPod's clock
-    /// was set by syncing with a computer in the same time zone as this one.
-    /// Pass an explicit time zone when reading a database that was written in
-    /// a different time zone:
-    ///
-    /// ```swift
-    /// let ipod = try iPod(
-    ///     contentsOf: databaseURL,
-    ///     timeZone: TimeZone(identifier: "America/Sao_Paulo")!
-    /// )
-    /// ```
-    ///
     /// - Parameters:
     ///   - url: URL to a supported database file or containing directory.
-    ///   - timeZone: The time zone the device's clock was set to. Defaults to
-    ///     the current time zone. Has no effect on databases that store UTC
-    ///     timestamps (`iTunes Library.itlp`).
+    ///   - configuration: Advanced options for reading the database. The
+    ///     default ``Configuration`` is correct for an iPod plugged into this
+    ///     computer.
     /// - Throws: ``iPodError`` if the database files cannot be read or parsed.
-    public init(contentsOf url: URL, timeZone: TimeZone = .current) throws(iPodError) {
+    public init(contentsOf url: URL, configuration: Configuration = Configuration()) throws(iPodError) {
+        let timeZone = configuration.timeZone
         self.url = url
         let reader: iPodDBReader
         do {
