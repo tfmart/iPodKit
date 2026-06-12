@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 iPodKit is a Swift Package Manager library for parsing iTunes database files from iPod devices. It follows a **simple, invisible, gradual** SDK design pattern inspired by RevenueCat.
 
-See `ARCHITECTURE.md` for the full init flow, parsing pipeline, and internal type mapping.
+See `docs/ARCHITECTURE.md` for the full init flow, parsing pipeline, and internal type mapping.
 
 ## Build and Test Commands
 

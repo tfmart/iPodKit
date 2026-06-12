@@ -1,6 +1,6 @@
 # iPodKit
 
-A Swift library for reading iPod databases.
+iPodKit is a Swift library and command line tool for reading iPod databases from classic iPod devices. It loads tracks, playlists, artwork, playback history, and device metadata from iTunesDB, iTunesSD, SQLite library, and artwork database files.
 
 ## Installation
 
@@ -12,139 +12,66 @@ dependencies: [
 ]
 ```
 
-## Command Line Tool
-
-iPodKit ships with `ipodkit`, a CLI for reading iPod data from the terminal — handy for quick inspection, scripting, and AI agents.
-
-### Install
-
-Download the prebuilt universal binary (requires macOS 12+):
-
-```bash
-curl -fsSL https://github.com/tfmart/iPodKit/releases/latest/download/ipodkit-macos-universal.tar.gz | tar -xz && sudo mv ipodkit /usr/local/bin/
-```
-
-> Downloading the archive with a browser instead of `curl` quarantines it; clear it with `xattr -d com.apple.quarantine ipodkit`.
-
-Or build from source:
-
-```bash
-git clone https://github.com/tfmart/iPodKit.git && cd iPodKit
-swift build -c release --product ipodkit
-cp .build/release/ipodkit /usr/local/bin/
-```
-
-### Usage
-
-When no path is given, `ipodkit` auto-detects a mounted iPod in `/Volumes`.
-
-```bash
-# Device summary
-ipodkit info
-ipodkit info /Volumes/MyiPod
-
-# Device details: serial, settings, sync source, radio presets, Bluetooth pairings
-ipodkit device
-
-# List tracks, with filters
-ipodkit tracks --artist "beatles" --limit 20
-ipodkit tracks --search "love" --playlist 4600230050724520468
-
-# Full details for one track
-ipodkit track 13915076778449898231
-
-# List playlists
-ipodkit playlists
-
-# Export artwork as PNG
-ipodkit artwork 13915076778449898231 --list
-ipodkit artwork 13915076778449898231 --size 200x200 --output cover.png
-
-# Timestamps in binary iPod databases are device-local wall-clock time;
-# pass the device's time zone if it differs from this machine's
-ipodkit tracks --timezone America/Sao_Paulo
-```
-
-### JSON output for scripts and agents
-
-Every command accepts `--json`. Stdout then carries only the JSON document; diagnostics go to stderr, and failures exit nonzero.
-
-```bash
-ipodkit tracks --search "beatles" --json | jq -r '.[].title'
-ipodkit playlists --json | jq '.[] | {name, trackCount}'
-ipodkit info --json
-```
-
-Schema notes:
-
-- `id` fields are **decimal strings** — iPod track IDs are 64-bit values that exceed JavaScript's safe integer range
-- Dates are ISO8601 UTC, durations are seconds
-- `mediaType` is a stable lowercase identifier (`audio`, `podcast`, `audiobook`, …)
-
 ## Quick Start
+
+Create an `iPod` from a mounted iPod volume, a directory containing iPod database files, or a database file directly.
 
 ```swift
 import iPodKit
 
-let ipod = try iPod(contentsOf: URL(fileURLWithPath: "/Users/me/iPod Database/iTunesDB"))
+let url = URL(fileURLWithPath: "/Volumes/MyiPod")
+let ipod = try iPod(contentsOf: url)
 
 print(ipod.deviceName ?? "Unknown iPod")
-print("Tracks: \(ipod.tracks.count)")
+print("\(ipod.tracks.count) tracks")
+print("\(ipod.playlists.count) playlists")
 
 for track in ipod.tracks {
-    print("\(track.title ?? "Unknown") by \(track.artist ?? "Unknown")")
+    let title = track.title ?? "Unknown Title"
+    let artist = track.artist ?? "Unknown Artist"
+
+    print("\(title) by \(artist)")
 }
 ```
 
-## Features
+Read the full [Quick Start](https://tfmart.github.io/iPodKit/documentation/ipodkit/gettingstarted/) guide for playlists, artwork, and device metadata.
 
-### Track Metadata
+## Command Line Tool
 
-```swift
-if let track = ipod.tracks.first {
-    track.title           // String?
-    track.artist          // String?
-    track.album           // String?
-    track.genre           // String?
-    track.composer        // String?
-    track.duration        // TimeInterval (seconds)
-    track.fileSize        // Int (bytes)
-    track.bitrate         // Int? (kbps)
-    track.trackNumber     // Int?
-    track.year            // Int?
-    track.discNumber      // Int?
-    track.bpm             // Int?
-    track.isCompilation   // Bool
-    track.mediaType       // MediaType
-}
+iPodKit also ships with `ipodkit`, a CLI for inspecting iPod data from the terminal. Install with:
+
+```bash
+curl -fsSL https://github.com/tfmart/iPodKit/releases/latest/download/ipodkit-macos-universal.tar.gz | tar -xz
+sudo mv ipodkit /usr/local/bin/
 ```
 
-### Playback Data
+When no path is given, `ipodkit` auto-detects a mounted iPod in `/Volumes`.
 
-```swift
-if let track = ipod.tracks.first {
-    track.playCount       // Int
-    track.skipCount       // Int
-    track.rating          // Int (0-5 stars)
-    track.lastPlayed      // Date?
-    track.lastSkipped     // Date?
-    track.dateAdded       // Date?
-    track.bookmark        // TimeInterval? (resume position)
-}
+```bash
+ipodkit tracks --artist "beatles" --limit 20
 ```
+
+See the [Command Line Tool](https://tfmart.github.io/iPodKit/documentation/ipodkit/commandlinetool/) guide for install options, command examples, JSON output, and the full command reference.
+
+## What iPodKit Reads
+
+- Track metadata: title, artist, album, genre, duration, bitrate, track numbers, media type, and file location
+- Playback data: play count, skip count, rating, last played, last skipped, date added, and bookmark position
+- Playlists: playlist names, stable identifiers, ordered tracks, and track IDs
+- Artwork: available thumbnail sizes and lazy image loading
+- Device metadata: device name, serial number, icon, sync source, settings, radio presets, and Bluetooth pairings
+
+## Examples
 
 ### Playlists
 
 ```swift
 for playlist in ipod.playlists {
-    print("\(playlist.name) - \(playlist.tracks.count) tracks")
+    print("\(playlist.name): \(playlist.tracks.count) tracks")
 
     for track in playlist.tracks {
-        print("  \(track.title ?? "Unknown")")
+        print(track.title ?? "Unknown Title")
     }
-
-    // Track identifiers are available when needed
-    print(playlist.trackIds)
 }
 ```
 
@@ -152,21 +79,24 @@ for playlist in ipod.playlists {
 
 ```swift
 if let artwork = ipod.tracks.first?.artwork {
-    // Largest available size
     let image = try await artwork.image()
+    print("Loaded artwork: \(image.width)x\(image.height)")
 
-    // Specific size
-    let thumb = try await artwork.image(size: .init(width: 56, height: 56))
-
-    // Available sizes
-    print(artwork.sizes)
+    let thumbnail = try await artwork.image(size: .init(width: 56, height: 56))
+    print("Loaded thumbnail: \(thumbnail.width)x\(thumbnail.height)")
 }
 ```
 
 ### Device Info
 
 ```swift
-ipod.deviceName       // String? — e.g., "John's iPod"
+print(ipod.serialNumber ?? "Unknown serial")
+print(ipod.settings?.firmwareVersion ?? "Unknown firmware")
+print("Synced with \(ipod.syncSource?.computerName ?? "unknown computer")")
+
+for device in ipod.bluetoothDevices {
+    print("Paired: \(device.name ?? device.address)")
+}
 ```
 
 ## Supported Formats
@@ -196,4 +126,4 @@ ipod.deviceName       // String? — e.g., "John's iPod"
 
 ## License
 
-MIT License
+iPodKit is available under the MIT License. See [LICENSE](LICENSE) for details.
