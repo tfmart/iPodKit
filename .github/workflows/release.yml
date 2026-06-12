@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify CLIVersion matches tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! grep -q "\"${VERSION}\"" Sources/iPodKitCLICore/CLIVersion.swift; then
+            echo "CLIVersion.current does not match tag ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+
+      - name: Build universal binary
+        # Versioned triples stamp minos 12.0: bare CLI binaries can't use the
+        # concurrency back-deployment libs, so macOS < 12 must be rejected at
+        # load time. The library keeps its 10.15 floor.
+        # Separate scratch paths: the two triples share a products dir and
+        # would overwrite each other otherwise.
+        run: |
+          swift build -c release --product ipodkit --triple arm64-apple-macosx12.0 --scratch-path .build-arm64
+          swift build -c release --product ipodkit --triple x86_64-apple-macosx12.0 --scratch-path .build-x86_64
+          ARM64_BIN=$(swift build -c release --product ipodkit --triple arm64-apple-macosx12.0 --scratch-path .build-arm64 --show-bin-path)/ipodkit
+          X86_64_BIN=$(swift build -c release --product ipodkit --triple x86_64-apple-macosx12.0 --scratch-path .build-x86_64 --show-bin-path)/ipodkit
+          mkdir -p dist
+          lipo -create -output dist/ipodkit "$ARM64_BIN" "$X86_64_BIN"
+          lipo -info dist/ipodkit
+          vtool -show-build dist/ipodkit | grep -A1 "platform MACOS"
+
+      - name: Package
+        run: |
+          strip -rSTx dist/ipodkit
+          codesign --sign - --force dist/ipodkit
+          tar -czf ipodkit-macos-universal.tar.gz -C dist ipodkit
+          shasum -a 256 ipodkit-macos-universal.tar.gz > ipodkit-macos-universal.tar.gz.sha256
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --generate-notes \
+            ipodkit-macos-universal.tar.gz \
+            ipodkit-macos-universal.tar.gz.sha256

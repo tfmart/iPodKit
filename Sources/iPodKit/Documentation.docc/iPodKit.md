@@ -43,6 +43,7 @@ data when available:
 ### Getting Started
 
 - <doc:GettingStarted>
+- <doc:CommandLineTool>
 
 ### Essentials
 
@@ -50,6 +51,10 @@ data when available:
 - ``iPod/Configuration``
 - ``Track``
 - ``Playlist``
+
+### Command Line Tool
+
+- <doc:CommandReference>
 
 ### Media
 
