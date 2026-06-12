@@ -27,17 +27,19 @@ jobs:
 
       - name: Build DocC site
         run: |
-          swift package generate-documentation \
+          swift package \
+            --allow-writing-to-directory "$RUNNER_TEMP/documentation" \
+            generate-documentation \
             --target iPodKit \
             --disable-indexing \
             --transform-for-static-hosting \
             --hosting-base-path "${DOCC_HOSTING_BASE_PATH}" \
             --warnings-as-errors \
-            --output-path .build/documentation
+            --output-path "$RUNNER_TEMP/documentation"
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .build/documentation
+          path: ${{ runner.temp }}/documentation
 
   deploy:
     needs: build
