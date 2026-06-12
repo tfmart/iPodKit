@@ -23,6 +23,9 @@ If you pass a directory, iPodKit searches the known database locations inside
 that directory. If you pass a database file, iPodKit reads that file directly
 and uses nearby sidecar files when it can find them.
 
+If you want to inspect the same data from a terminal first, use the
+<doc:CommandLineTool>.
+
 ## Read Tracks
 
 Use ``iPod/tracks`` to list every track in the loaded library.
@@ -89,6 +92,7 @@ do {
 
 ## See Also
 
+- <doc:CommandLineTool>
 - ``iPod``
 - ``Track``
 - ``Playlist``

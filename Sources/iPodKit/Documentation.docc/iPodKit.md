@@ -41,12 +41,17 @@ data when available:
 ### Getting Started
 
 - <doc:GettingStarted>
+- <doc:CommandLineTool>
 
 ### Essentials
 
 - ``iPod``
 - ``Track``
 - ``Playlist``
+
+### Command Line Tool
+
+- <doc:CommandReference>
 
 ### Media
 
